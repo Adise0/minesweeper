@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <regex>
 #include <string>
 
 /**
@@ -21,6 +22,10 @@ using namespace std;
 #define IS_NUMBER 3
 #define IS_BOMB 4
 
+// Truth table
+#define KEY_UP_CODE 72
+#define KEY_UP 0
+
 int main() {
 #pragma region Utils
     // Sorry Alberto, It just hurts too much to not use this....
@@ -30,15 +35,15 @@ int main() {
     function<void()> separator = []() { cout << "======================================" << endl; };
     function<string()> ask = []() {
         string result;
-        cin >> result;
+        getline(cin, result);
         return result;
     };
     function<int()> getArrowKey = []() {
         int key = _getch();
 
         switch (key) {
-            case 72:
-                return 0;
+            case KEY_UP_CODE:
+                return KEY_UP;
             case 80:
                 return 1;
             case 77:
@@ -65,6 +70,7 @@ int main() {
     int boardSize;
     int nOfBombs;
     bool isPlaying;
+    int truthBoard[MATRIX_SIZE * MATRIX_SIZE];
     int board[MATRIX_SIZE * MATRIX_SIZE];
 
 #pragma region Setup
@@ -292,6 +298,7 @@ int main() {
 
 #pragma region Generation
     for (size_t i = 0; i < boardSize * boardSize; i++) {
+        truthBoard[i] = 0;
         board[i] = 0;
     }
 
@@ -299,17 +306,17 @@ int main() {
         int row = rand() % boardSize;
         int col = rand() % boardSize;
 
-        board[row * boardSize + col] = IS_BOMB;
+        truthBoard[row * boardSize + col] = IS_BOMB;
     }
 #pragma endregion
-
-#pragma region Game Loop
 
     isPlaying = true;
     string letters = "ABCDEFGHIJ";
 
-    while (isPlaying) {
-#pragma region Rendering
+#pragma region Board Rendering
+
+    function<void()> renderBoard = [&boardSize, &write, &gameMode, &board, &truthBoard, &space,
+                                    &isPlaying, &letters]() {
         for (size_t row = 0; row < (gameMode == 0 ? (boardSize + 1) : boardSize); row++) {
             for (size_t col = 0; col < (gameMode == 0 ? (boardSize + 1) : boardSize); col++) {
                 if (gameMode == 0) {
@@ -320,7 +327,8 @@ int main() {
                 }
 
                 int buffer = gameMode == 0 ? -1 : 0;
-                int cellType = board[(row + buffer) * boardSize + (col + buffer)];
+                int cellType =
+                    (isPlaying ? board : truthBoard)[(row + buffer) * boardSize + (col + buffer)];
                 switch (cellType) {
                     case IS_DEFAULT:
                         write(" ## ");
@@ -339,16 +347,72 @@ int main() {
                         write(" \033[38;5;124m[]\033[0m ");
                         break;
                     default:
-                        write("Bruh?");
+                        write(" \033[38;5;124m##\033[0m ");
                         break;
                 }
             }
             space();
         }
+    };
 #pragma endregion
-        // Get input
-        system("pause");
+
+#pragma region Game Loop
+
+    string maxChar = string() + letters[boardSize - 1];
+    regex inputRegX((boardSize >= 10 ? "^\\s*([A-" + maxChar + "])\\s*(10|[1-9])\\s*([ms])\\s*$"
+                                     : "^\\s*([A-" + maxChar + "])\\s*([1-" + to_string(boardSize) +
+                                           "])\\s*([ms])\\s*$"),
+                    regex_constants::icase);
+
+    while (isPlaying) {
+        renderBoard();
+        int row;
+        int col;
+        char action;
+
+        if (gameMode == 0) {
+            string input = ask();
+            writeLine("Input -> " + input);
+            // // AI for regex matching syntax in c++. Modified ofc
+            try {
+                smatch match;
+                if (regex_match(input, match, inputRegX)) {
+                    char colChar = toupper(match[1].str()[0]);
+                    int rowNum = std::stoi(match[2].str());
+                    action = std::tolower(match[3].str()[0]);
+
+                    col = colChar - 'A';
+                    row = rowNum - 1;
+                }
+            } catch (...) {
+                writeLine("Error reading match");
+            }
+            // End of syntax copy
+        }
+        writeLine("Result -> " + to_string(row) + to_string(col) + action);
+
+        int cellIndex = row * boardSize + col;
+
+        if (action == 'm') {
+            board[cellIndex] = IS_MARKED;
+        }
+        if (action == 's') {
+            if (truthBoard[cellIndex] == IS_BOMB) {
+                isPlaying = false;
+                break;
+            }
+        }
+        space();
     }
+
+    system("cls");
+    writeLine("GAME OVER!");
+    space();
+    renderBoard();
+
+#pragma endregion
+    // Get input
+    system("pause");
 
 #pragma endregion
 
