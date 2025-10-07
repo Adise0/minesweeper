@@ -53,9 +53,12 @@ int main() {
 #pragma endregion
 
     // Global
-    bool didIncorrectInput = false;
-    int size;
+    int boardSize;
     int nOfBombs;
+
+#pragma region Setup
+
+    bool didIncorrectInput = false;
 
 #pragma region GameMode
     bool hasChosenGameMode = false;
@@ -173,6 +176,7 @@ int main() {
     isReady = false;
     string errorMessage = "";
     bool isSizePicked = false;
+    bool isNOfBombsPicked = false;
     int maxBombs;
 
     while (!isReady) {
@@ -182,9 +186,13 @@ int main() {
         if (!isSizePicked)
             writeLine("  Input a board size \033[3m(1-10)\033[0m");
         else {
-            writeLine("  Board size -> \033[38;5;32m" + to_string(size) + "x" + to_string(size) +
-                      "\033[0m");
+            writeLine("  Board size -> \033[38;5;32m" + to_string(boardSize) + "x" +
+                      to_string(boardSize) + "\033[0m");
+        }
+        if (!isNOfBombsPicked) {
             writeLine("  Input the number of bombs \033[3m(1-" + to_string(maxBombs) + ")\033[0m");
+        } else {
+            writeLine("  Number of bombs -> \033[38;5;32m" + to_string(nOfBombs) + "\033[0m");
         }
         space();
         separator();
@@ -193,12 +201,14 @@ int main() {
             writeLine(errorMessage);
         }
         space();
+        if (isNOfBombsPicked && isSizePicked) writeLine("You ready? (y/n)");
 #pragma endregion
         string result = ask();
+
         if (!isSizePicked) {
             try {
-                size = stoi(result);
-                if (size < 1 || size > 10) {
+                boardSize = stoi(result);
+                if (boardSize < 1 || boardSize > 10) {
                     didIncorrectInput = true;
                     errorMessage = "Invalid size, please type a number between 1 and 10";
                     continue;
@@ -209,22 +219,41 @@ int main() {
                 continue;
             }
 
-            maxBombs = size * size - 1;
+            maxBombs = boardSize * boardSize - 1;
             isSizePicked = true;
             didIncorrectInput = false;
             continue;
         }
-        try {
-            nOfBombs = stoi(result);
-            if (nOfBombs < 1 || nOfBombs > maxBombs) {
+        if (!isNOfBombsPicked) {
+            try {
+                nOfBombs = stoi(result);
+                if (nOfBombs < 1 || nOfBombs > maxBombs) {
+                    didIncorrectInput = true;
+                    errorMessage = "Invalid number of bombs, please type a number between 1 and " +
+                                   to_string(maxBombs);
+                    continue;
+                }
+            } catch (...) {
                 didIncorrectInput = true;
-                errorMessage = "Invalid number of bombs, please type a number between 1 and " +
-                               to_string(maxBombs);
+                errorMessage = "Invalid input, please type a number";
                 continue;
             }
-        } catch (...) {
+            didIncorrectInput = false;
+            isNOfBombsPicked = true;
+            continue;
+        }
+
+                char resultChar = tolower(result[0]);
+        if (resultChar != 'y' && resultChar != 'n') {
             didIncorrectInput = true;
-            errorMessage = "Invalid input, please type a number";
+            errorMessage = "Unknown response, please type \"y\" or \"n\"";
+            continue;
+        }
+
+        if (resultChar == 'n') {
+            isSizePicked = false;
+            isNOfBombsPicked = false;
+            didIncorrectInput = false;
             continue;
         }
 
@@ -232,6 +261,7 @@ int main() {
     }
 #pragma endregion
 
-    system("pause");
+#pragma endregion
+
     return 0;
 }
