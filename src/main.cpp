@@ -39,17 +39,30 @@ int main() {
                 return 3;
         }
     };
+    function<void()> renderTitle = [&separator, &space, &writeLine]() {
+        system("cls");
+        separator();
+        space();
+        writeLine("             \033[1;38;5;32mMINESWEEPER\033[0m");
+        writeLine("              \033[3mBy: Adise\033[0m");
+        space();
+        separator();
+        space();
+    };
 
 #pragma endregion
 
-#pragma region GameMode
-
+    // Global
     bool didIncorrectInput = false;
+    int size;
+
+#pragma region GameMode
     bool hasChosenGameMode = false;
     int gameMode = 0;
 
     while (!hasChosenGameMode) {
 #pragma region Rendering
+        system("cls");
         separator();
         space();
         writeLine("             \033[1;38;5;32mMINESWEEPER\033[0m");
@@ -98,50 +111,54 @@ int main() {
         }
         gameMode = stoi(result);
         hasChosenGameMode = true;
+        didIncorrectInput = false;
     }
 #pragma endregion
-
-    system("cls");
 
 #pragma region How to play
     bool isReady = false;
 
+    while (!isReady) {
 #pragma region Rendering
-    separator();
-    space();
-    writeLine("             \033[1;38;5;32mMINESWEEPER\033[0m");
-    writeLine("              \033[3mBy: Adise\033[0m");
-    space();
-    separator();
-    space();
-    writeLine("\033[1mHOW TO PLAY:\033[0m");
-
-    if (gameMode == 1) {
-        writeLine("  Move your selected cell with the \033[38;5;32marrow keys!\033[0m");
-    } else {
-        writeLine("  Type the cell row and column.");
-    }
-
-    writeLine("  Once on the wanted cell, type:");
-    writeLine("  - \033[38;5;32mm\033[0m To mark the cell for a potential mine");
-    writeLine("  - \033[38;5;32ms\033[0m To open/show a cell");
-
-    if (gameMode == 0) {
+        system("cls");
+        separator();
         space();
-        writeLine(" Format: ");
-        writeLine(
-            "  - \033[38;5;32m[Column][Row] [Action]\033[0m To pick the cell and "
-            "action.");
-        writeLine("  - Example: \033[38;5;32mA1 m\033[0m To pick the cell A1 and mark it");
-        writeLine("  You will be promted to input any of the missing above\033[0m");
+        writeLine("             \033[1;38;5;32mMINESWEEPER\033[0m");
+        writeLine("              \033[3mBy: Adise\033[0m");
         space();
-    }
-    space();
-    separator();
-    space();
+        separator();
+        space();
+        writeLine("\033[1mHOW TO PLAY:\033[0m");
+
+        if (gameMode == 1) {
+            writeLine("  Move your selected cell with the \033[38;5;32marrow keys!\033[0m");
+        } else {
+            writeLine("  Type the cell row and column.");
+        }
+
+        writeLine("  Once on the wanted cell, type:");
+        writeLine("  - \033[38;5;32mm\033[0m To mark the cell for a potential mine");
+        writeLine("  - \033[38;5;32ms\033[0m To open/show a cell");
+
+        if (gameMode == 0) {
+            space();
+            writeLine(" Format: ");
+            writeLine(
+                "  - \033[38;5;32m[Column][Row] [Action]\033[0m To pick the cell and "
+                "action.");
+            writeLine("  - Example: \033[38;5;32mA1 m\033[0m To pick the cell A1 and mark it");
+            writeLine("  You will be promted to input any of the missing above\033[0m");
+            space();
+        }
+        space();
+        separator();
+        if (didIncorrectInput) {
+            space();
+            writeLine("Unknown response, please type \"y\" or \"n\"");
+        }
+        space();
 #pragma endregion
 
-    while (!isReady) {
         writeLine("You ready? (y/n)");
         string result = ask();
         char resultChar = tolower(result[0]);
@@ -150,16 +167,64 @@ int main() {
             space();
             writeLine("Unknown response, please type \"y\" or \"n\"");
             space();
+            didIncorrectInput = true;
             continue;
         }
+
         if (resultChar == 'n') {
             writeLine("Goodbye then!");
             system("pause");
             return 0;
         }
+        didIncorrectInput = false;
         isReady = true;
     }
 #pragma endregion
+
+#pragma region Board setup
+
+    bool isLocked = false;
+    isReady = false;
+    string errorMessage = "";
+
+    while (!isReady) {
+#pragma region Rendering
+        system("cls");
+        separator();
+        space();
+        writeLine("             \033[1;38;5;32mMINESWEEPER\033[0m");
+        writeLine("              \033[3mBy: Adise\033[0m");
+        space();
+        separator();
+        space();
+        writeLine("\033[1mBOARD SETUP:\033[0m");
+        writeLine("  Input a board size \033[3m(1-10)\033[0m");
+        space();
+        separator();
+        if (didIncorrectInput) {
+            space();
+            writeLine(errorMessage);
+        }
+        space();
+#pragma endregion
+        string result = ask();
+        try {
+            size = stoi(result);
+            if (size < 1 || size > 10) {
+                didIncorrectInput = true;
+                errorMessage = "Invalid size, please type a number between 1 and 10";
+                continue;
+            }
+        } catch (...) {
+            didIncorrectInput = true;
+            errorMessage = "Invalid input, please type a number";
+            continue;
+        }
+
+        isReady = true;
+    }
+#pragma endregion
+
     system("pause");
     return 0;
 }
