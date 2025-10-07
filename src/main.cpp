@@ -15,16 +15,41 @@ using namespace std;
 #define MATRIX_SIZE 10
 #define DEV_MODE true
 
-// Truth table
+#pragma region Truth tables
+#pragma region Cell type
 #define IS_DEFAULT 0
 #define IS_MARKED 1
 #define IS_EMPTY 2
-#define IS_NUMBER 3
-#define IS_BOMB 4
+#define IS_BOMB 3
+#define IS_NUMBER 4
+#pragma endregion
 
-// Truth table
-#define KEY_UP_CODE 72
-#define KEY_UP 0
+#pragma region key codes
+#define ARROW_UP_CODE 72
+#define ARROW_DOWN_CODE 80
+#define ARROW_LEFT_CODE 75
+#define ARROW_RIGHT_CODE 77
+#pragma endregion
+
+#pragma region Arrow keys
+#define ARROW_UP 0
+#define ARROW_DOWN 1
+#define ARROW_LEFT 2
+#define ARROW_RIGHT 3
+#pragma endregion
+
+#pragma region Neighbours
+#define NEIGHBOUR_TOP_LEFT 0
+#define NEIGHBOUR_TOP 1
+#define NEIGHBOUR_TOP_RIGHT 2
+#define NEIGHBOUR_RIGHT 3
+#define NEIGHBOUR_BOTTOM_RIGHT 4
+#define NEIGHBOUR_BOTTOM 5
+#define NEIGHBOUR_BOTTOM_LEFT 6
+#define NEIGHBOUR_LEFT 7
+#define NUM_NEIGHBOURS 8
+#pragma endregion
+#pragma endregion
 
 int main() {
 #pragma region Utils
@@ -42,14 +67,14 @@ int main() {
         int key = _getch();
 
         switch (key) {
-            case KEY_UP_CODE:
-                return KEY_UP;
-            case 80:
-                return 1;
-            case 77:
-                return 2;
-            case 75:
-                return 3;
+            case ARROW_UP_CODE:
+                return ARROW_UP;
+            case ARROW_DOWN_CODE:
+                return ARROW_DOWN;
+            case ARROW_LEFT_CODE:
+                return ARROW_LEFT;
+            case ARROW_RIGHT_CODE:
+                return ARROW_RIGHT;
         }
     };
     function<void()> renderTitle = [&separator, &space, &writeLine]() {
@@ -77,62 +102,6 @@ int main() {
 
     bool didIncorrectInput = false;
 
-#pragma region GameMode
-    bool hasChosenGameMode = false;
-    int gameMode = 0;
-
-    while (!hasChosenGameMode) {
-#pragma region Rendering
-        renderTitle();
-        writeLine("\033[1mGAME MODE:\033[0m");
-        writeLine("  Select a game mode:");
-        writeLine("  - \033[38;5;32m[0]\033[0m Type to play");
-        writeLine("  - \033[38;5;32m[1]\033[0m Play with arrow keys");
-        space();
-        separator();
-        if (didIncorrectInput) {
-            space();
-            writeLine("Unknown response, please type \"0\" or \"1\"");
-        }
-        space();
-#pragma endregion
-        string result;
-        if (!DEV_MODE)
-            result = ask();
-        else
-            result = "0";
-
-        if (!result._Equal("0") && !result._Equal("1")) {
-            didIncorrectInput = true;
-            system("cls");
-            continue;
-            /**
-             * My take on flow breaking elements:
-             *
-             * Using flow breaking elements is NOT a bad practice!
-             * They are a very poowerfull tool to avoid extra if statements and bool flag checks.
-             *
-             * I don't know from where you guys got the idea that flow break elements are bad
-             * practices. I agree that goto is the exception, using goto is not a good approach.
-             *
-             * For example, continue here keeps the code lean and clean, since it avoids an extra
-             * check for the code bellow. I'd compare this to:
-             *
-             * if(condition){return;}
-             * else {//Do stuff}
-             *
-             * else here is unecessary. continue; provides the same value as return does in the code
-             * above.
-             *
-             * Tremenda chapa
-             */
-        }
-        gameMode = stoi(result);
-        hasChosenGameMode = true;
-        didIncorrectInput = false;
-    }
-#pragma endregion
-
 #pragma region How to play
     bool isReady = false;
 
@@ -140,27 +109,18 @@ int main() {
 #pragma region Rendering
         renderTitle();
         writeLine("\033[1mHOW TO PLAY:\033[0m");
-
-        if (gameMode == 1) {
-            writeLine("  Move your selected cell with the \033[38;5;32marrow keys!\033[0m");
-        } else {
-            writeLine("  Type the cell row and column.");
-        }
-
+        writeLine("  Type the cell row and column.");
         writeLine("  Once on the wanted cell, type:");
         writeLine("  - \033[38;5;32mm\033[0m To mark the cell for a potential mine");
         writeLine("  - \033[38;5;32ms\033[0m To open/show a cell");
-
-        if (gameMode == 0) {
-            space();
-            writeLine(" Format: ");
-            writeLine(
-                "  - \033[38;5;32m[Column][Row] [Action]\033[0m To pick the cell and "
-                "action.");
-            writeLine("  - Example: \033[38;5;32mA1 m\033[0m To pick the cell A1 and mark it");
-            writeLine("  You will be promted to input any of the missing above\033[0m");
-            space();
-        }
+        space();
+        writeLine(" Format: ");
+        writeLine(
+            "  - \033[38;5;32m[Column][Row] [Action]\033[0m To pick the cell and "
+            "action.");
+        writeLine("  - Example: \033[38;5;32mA1 m\033[0m To pick the cell A1 and mark it");
+        writeLine("  You will be promted to input any of the missing above\033[0m");
+        space();
         space();
         separator();
         if (didIncorrectInput) {
@@ -255,7 +215,7 @@ int main() {
         }
         if (!isNOfBombsPicked) {
             try {
-                if (DEV_MODE) result = "50";
+                if (DEV_MODE) result = "1";
 
                 nOfBombs = stoi(result);
                 if (nOfBombs < 1 || nOfBombs > maxBombs) {
@@ -312,21 +272,20 @@ int main() {
 
     isPlaying = true;
     string letters = "ABCDEFGHIJ";
+    string keepMessage;
 
 #pragma region Board Rendering
 
-    function<void()> renderBoard = [&boardSize, &write, &gameMode, &board, &truthBoard, &space,
-                                    &isPlaying, &letters]() {
-        for (size_t row = 0; row < (gameMode == 0 ? (boardSize + 1) : boardSize); row++) {
-            for (size_t col = 0; col < (gameMode == 0 ? (boardSize + 1) : boardSize); col++) {
-                if (gameMode == 0) {
-                    if (col == 0 && row == 0) write("    ");
-                    if (col == 0 && row != 0) write((row < 10 ? " " : "") + to_string(row) + " ");
-                    if (row == 0) write(string() + letters[col] + "   ");
-                    if (row == 0 || col == 0) continue;
-                }
+    function<void()> renderBoard = [&boardSize, &write, &board, &truthBoard, &space, &isPlaying,
+                                    &letters, &writeLine, &keepMessage]() {
+        for (size_t row = 0; row < (boardSize + 1); row++) {
+            for (size_t col = 0; col < (boardSize + 1); col++) {
+                if (col == 0 && row == 0) write("    ");
+                if (col == 0 && row != 0) write((row < 10 ? " " : "") + to_string(row) + " ");
+                if (row == 0) write(string() + letters[col] + "   ");
+                if (row == 0 || col == 0) continue;
 
-                int buffer = gameMode == 0 ? -1 : 0;
+                int buffer = -1;
                 int cellType =
                     (isPlaying ? board : truthBoard)[(row + buffer) * boardSize + (col + buffer)];
                 switch (cellType) {
@@ -353,56 +312,97 @@ int main() {
             }
             space();
         }
+        writeLine(keepMessage);
+        keepMessage = "";
     };
 #pragma endregion
 
 #pragma region Game Loop
 
     string maxChar = string() + letters[boardSize - 1];
-    regex inputRegX((boardSize >= 10 ? "^\\s*([A-" + maxChar + "])\\s*(10|[1-9])\\s*([ms])\\s*$"
+    regex inputRegX((boardSize >= 10 ? "^\\s*([A-" + maxChar + "])\\s*(10|[1-9])\\s*([ms])?\\s*$"
                                      : "^\\s*([A-" + maxChar + "])\\s*([1-" + to_string(boardSize) +
-                                           "])\\s*([ms])\\s*$"),
+                                           "])\\s*([ms])?\\s*$"),
                     regex_constants::icase);
+
+    function<void(int index, int neighbours[NUM_NEIGHBOURS])> getNeighbours =
+        [&boardSize, &writeLine, &keepMessage](int index, int neighbours[NUM_NEIGHBOURS]) {
+            bool isLeft = index % boardSize == 0;
+            bool isRight = index % boardSize == 9;
+            bool isTop = index / boardSize == 0;
+            bool isBottom = int(index / boardSize) == 9;
+
+            neighbours[NEIGHBOUR_TOP_LEFT] = (isTop || isLeft) ? -1 : index - boardSize - 1;
+            neighbours[NEIGHBOUR_TOP] = isTop ? -1 : index - boardSize;
+            neighbours[NEIGHBOUR_TOP_RIGHT] = (isTop || isRight) ? -1 : index - boardSize + 1;
+            neighbours[NEIGHBOUR_RIGHT] = isRight ? -1 : index + 1;
+            neighbours[NEIGHBOUR_BOTTOM_RIGHT] = (isBottom || isRight) ? -1 : index + boardSize + 1;
+            neighbours[NEIGHBOUR_BOTTOM] = isBottom ? -1 : index + boardSize;
+            neighbours[NEIGHBOUR_BOTTOM_LEFT] = (isBottom || isLeft) ? -1 : index + boardSize - 1;
+            neighbours[NEIGHBOUR_LEFT] = isLeft ? -1 : index - 1;
+
+            return neighbours;
+        };
 
     while (isPlaying) {
         renderBoard();
-        int row;
-        int col;
-        char action;
+        int row = -1;
+        int col = -1;
+        char action = '\0';
 
-        if (gameMode == 0) {
-            string input = ask();
-            writeLine("Input -> " + input);
+        string input = ask();
+        try {
             // // AI for regex matching syntax in c++. Modified ofc
-            try {
-                smatch match;
-                if (regex_match(input, match, inputRegX)) {
-                    char colChar = toupper(match[1].str()[0]);
-                    int rowNum = std::stoi(match[2].str());
-                    action = std::tolower(match[3].str()[0]);
+            smatch match;
+            if (regex_match(input, match, inputRegX)) {
+                char colChar = toupper(match[1].str()[0]);
+                int rowNum = stoi(match[2].str());
+                if (match[3].matched)
+                    action = tolower(match[3].str()[0]);
+                else
+                    action = 's';
 
-                    col = colChar - 'A';
-                    row = rowNum - 1;
-                }
-            } catch (...) {
-                writeLine("Error reading match");
+                col = colChar - 'A';
+                row = rowNum - 1;
             }
             // End of syntax copy
+        } catch (...) {
+            writeLine("Error reading input");
+            continue;
         }
-        writeLine("Result -> " + to_string(row) + to_string(col) + action);
 
         int cellIndex = row * boardSize + col;
 
         if (action == 'm') {
             board[cellIndex] = IS_MARKED;
         }
+
         if (action == 's') {
+            writeLine(to_string(cellIndex) + " " + to_string(truthBoard[cellIndex]));
             if (truthBoard[cellIndex] == IS_BOMB) {
                 isPlaying = false;
                 break;
             }
+
+            bool hasClearNeighbours = false;
+            int neighbours[NUM_NEIGHBOURS];
+            getNeighbours(cellIndex, neighbours);
+
+            do {
+                int bombCount = 0;
+                hasClearNeighbours = false;
+                for (size_t neighbour = 0; neighbour < NUM_NEIGHBOURS; neighbour++) {
+                    if (neighbours[neighbour] == -1) continue;
+
+                    int cellType = truthBoard[neighbours[neighbour]];
+                    if (cellType == IS_EMPTY) {
+                        hasClearNeighbours = true;
+                    }
+                }
+            } while (hasClearNeighbours);
+
+            system("cls");
         }
-        space();
     }
 
     system("cls");
