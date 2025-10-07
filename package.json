@@ -4,7 +4,8 @@
   "main": "src/main.cpp",
   "type": "module",
   "scripts": {
-    "startDev": "setupEnv.bat && nodemon -q ."
+    "startDev": "setupEnv.bat && nodemon -q .",
+    "dev": "setupEnv.bat && nodemon -q . --config ./integrated.nodemon.json"
   },
   "keywords": [],
   "author": "",
