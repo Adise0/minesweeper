@@ -314,8 +314,8 @@ int main() {
             for (size_t col = 0; col < (gameMode == 0 ? (boardSize + 1) : boardSize); col++) {
                 if (gameMode == 0) {
                     if (col == 0 && row == 0) write("    ");
-                    if (col == 0 && row != 0) write(to_string(row) + "  ");
-                    if (row == 0) write(string() + letters[col] + "  ");
+                    if (col == 0 && row != 0) write((row < 10 ? " " : "") + to_string(row) + " ");
+                    if (row == 0) write(string() + letters[col] + "   ");
                     if (row == 0 || col == 0) continue;
                 }
 
@@ -330,13 +330,13 @@ int main() {
                         write(" \033[38;5;124m##\033[0m ");
                         break;
                     case IS_EMPTY:
-                        write(" \033[38;5;124m[ ]\033[0m ");
+                        write(" \033[38;5;124m[]\033[0m ");
                         break;
                     case IS_NUMBER:
                         write(" \033[38;5;124m 1 \033[0m ");
                         break;
                     case IS_BOMB:
-                        write(" \033[38;5;124m[ ]\033[0m ");
+                        write(" \033[38;5;124m[]\033[0m ");
                         break;
                     default:
                         write("Bruh?");
