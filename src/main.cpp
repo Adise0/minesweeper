@@ -1,7 +1,13 @@
+#include <conio.h>
+
 #include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <string>
+
+/**
+ * Please read README before grading
+ */
 
 using namespace std;
 
@@ -14,7 +20,26 @@ int main() {
     function<void(string line)> write = [](string line) { cout << line; };
     function<void()> space = []() { cout << endl; };
     function<void()> separator = []() { cout << "======================================" << endl; };
-    function<void(string & result)> ask = [](string& result) { cin >> result; };
+    function<string()> ask = []() {
+        string result;
+        cin >> result;
+        return result;
+    };
+    function<int()> getArrowKey = []() {
+        int key = _getch();
+
+        switch (key) {
+            case 72:
+                return 0;
+            case 80:
+                return 1;
+            case 77:
+                return 2;
+            case 75:
+                return 3;
+        }
+    };
+
 #pragma endregion
 
 #pragma region GameMode
@@ -34,40 +59,107 @@ int main() {
         space();
         writeLine("\033[1mGAME MODE:\033[0m");
         writeLine("  Select a game mode:");
-        write("  - ");
-        writeLine(string(gameMode == 0 ? "\033[4;38;5;32m" : "") + "[0] Type to play\033[0m");
-        write("  - ");
-        writeLine(string(gameMode == 1 ? "\033[4;38;5;32m" : "") +
-                  "[1] Play with arrow keys\033[0m");
+        writeLine("  - \033[38;5;32m[0]\033[0m Type to play");
+        writeLine("  - \033[38;5;32m[1]\033[0m Play with arrow keys");
         space();
         separator();
         if (didIncorrectInput) {
             space();
-            writeLine("Unknown response, please type \"0\" or \"1\" OR move with the arrow keys!");
+            writeLine("Unknown response, please type \"0\" or \"1\"");
         }
         space();
 #pragma endregion
 
-        string result;
-        ask(result);
+        string result = ask();
         if (!result._Equal("0") && !result._Equal("1")) {
             didIncorrectInput = true;
             system("cls");
             continue;
+            /**
+             * My take on flow breaking elements:
+             *
+             * Using flow breaking elements is NOT a bad practice!
+             * They are a very poowerfull tool to avoid extra if statements and bool flag checks.
+             *
+             * I don't know from where you guys got the idea that flow break elements are bad
+             * practices. I agree that goto is the exception, using goto is not a good approach.
+             *
+             * For example, continue here keeps the code lean and clean, since it avoids an extra
+             * check for the code bellow. I'd compare this to:
+             *
+             * if(condition){return;}
+             * else {//Do stuff}
+             *
+             * else here is unecessary. continue; provides the same value as return does in the code
+             * above.
+             *
+             * Tremenda chapa
+             */
         }
-        didIncorrectInput = false;  // Unused but for clarity
         gameMode = stoi(result);
+        hasChosenGameMode = true;
     }
-
-    // writeLine("\033[1mHOW TO PLAY:\033[0m");
-    // writeLine("  Move your selected cell with the arrow keys!");
-    // writeLine("  Once on the wanted cell, type:");
-    // writeLine("  - \033[3mm\033[0m To mark the cell for a potential mine");
-    // writeLine("  - \033[3ms\033[0m To open/show a cell");
-    // space();
-    // separator();
-    // space();
 #pragma endregion
 
-    system("pause");  // TEMP
+    system("cls");
+
+#pragma region How to play
+    bool isReady = false;
+
+#pragma region Rendering
+    separator();
+    space();
+    writeLine("             \033[1;38;5;32mMINESWEEPER\033[0m");
+    writeLine("              \033[3mBy: Adise\033[0m");
+    space();
+    separator();
+    space();
+    writeLine("\033[1mHOW TO PLAY:\033[0m");
+
+    if (gameMode == 1) {
+        writeLine("  Move your selected cell with the \033[38;5;32marrow keys!\033[0m");
+    } else {
+        writeLine("  Type the cell row and column.");
+    }
+
+    writeLine("  Once on the wanted cell, type:");
+    writeLine("  - \033[38;5;32mm\033[0m To mark the cell for a potential mine");
+    writeLine("  - \033[38;5;32ms\033[0m To open/show a cell");
+
+    if (gameMode == 0) {
+        space();
+        writeLine(" Format: ");
+        writeLine(
+            "  - \033[38;5;32m[Column][Row] [Action]\033[0m To pick the cell and "
+            "action.");
+        writeLine("  - Example: \033[38;5;32mA1 m\033[0m To pick the cell A1 and mark it");
+        writeLine("  You will be promted to input any of the missing above\033[0m");
+        space();
+    }
+    space();
+    separator();
+    space();
+#pragma endregion
+
+    while (!isReady) {
+        writeLine("You ready? (y/n)");
+        string result = ask();
+        char resultChar = tolower(result[0]);
+
+        if (resultChar != 'y' && resultChar != 'n') {
+            space();
+            writeLine("Unknown response, please type \"y\" or \"n\"");
+            space();
+            continue;
+        }
+        if (resultChar == 'n') {
+            writeLine("Goodbye then!");
+            system("pause");
+            return 0;
+        }
+        isReady = true;
+    }
+#pragma endregion
+    system("pause");
+    return 0;
 }
