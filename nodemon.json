@@ -1,0 +1,8 @@
+{
+  "watch": ["*.cpp", "*.h"],
+  "ext": "cpp,h",
+  "events": {
+    "restart": "powershell -NoProfile -ExecutionPolicy Bypass -File stop.ps1"
+  },
+  "exec": "clear && build.bat && clear && powershell -NoProfile -ExecutionPolicy Bypass -File start.ps1"
+}

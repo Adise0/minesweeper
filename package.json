@@ -1,0 +1,16 @@
+{
+  "name": "practica-01",
+  "version": "1.0.0",
+  "main": "src/main.cpp",
+  "type": "module",
+  "scripts": {
+    "startDev": "setupEnv.bat && nodemon -q ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
