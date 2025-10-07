@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "startDev": "setupEnv.bat && nodemon -q .",
-    "dev": "setupEnv.bat && nodemon -q . --config ./integrated.nodemon.json"
+    "dev": "setupEnv.bat && nodemon -q . --config ./integrated.nodemon.json",
+    "build": "setupEnv.bat && build.bat"
   },
   "keywords": [],
   "author": "",

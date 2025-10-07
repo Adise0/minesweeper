@@ -12,6 +12,14 @@
 using namespace std;
 
 #define MATRIX_SIZE 10
+#define DEV_MODE true
+
+// Truth table
+#define IS_DEFAULT 0
+#define IS_MARKED 1
+#define IS_EMPTY 2
+#define IS_NUMBER 3
+#define IS_BOMB 4
 
 int main() {
 #pragma region Utils
@@ -52,9 +60,12 @@ int main() {
 
 #pragma endregion
 
+    srand(time(0));
     // Global
     int boardSize;
     int nOfBombs;
+    bool isPlaying;
+    int board[MATRIX_SIZE * MATRIX_SIZE];
 
 #pragma region Setup
 
@@ -79,8 +90,12 @@ int main() {
         }
         space();
 #pragma endregion
+        string result;
+        if (!DEV_MODE)
+            result = ask();
+        else
+            result = "0";
 
-        string result = ask();
         if (!result._Equal("0") && !result._Equal("1")) {
             didIncorrectInput = true;
             system("cls");
@@ -150,7 +165,11 @@ int main() {
 #pragma endregion
 
         writeLine("You ready? (y/n)");
-        string result = ask();
+        string result;
+        if (!DEV_MODE)
+            result = ask();
+        else
+            result = "y";
         char resultChar = tolower(result[0]);
 
         if (resultChar != 'y' && resultChar != 'n') {
@@ -203,7 +222,11 @@ int main() {
         space();
         if (isNOfBombsPicked && isSizePicked) writeLine("You ready? (y/n)");
 #pragma endregion
-        string result = ask();
+        string result;
+        if (!DEV_MODE)
+            result = ask();
+        else
+            result = "10";
 
         if (!isSizePicked) {
             try {
@@ -226,6 +249,8 @@ int main() {
         }
         if (!isNOfBombsPicked) {
             try {
+                if (DEV_MODE) result = "50";
+
                 nOfBombs = stoi(result);
                 if (nOfBombs < 1 || nOfBombs > maxBombs) {
                     didIncorrectInput = true;
@@ -243,7 +268,8 @@ int main() {
             continue;
         }
 
-                char resultChar = tolower(result[0]);
+        if (DEV_MODE) result = "y";
+        char resultChar = tolower(result[0]);
         if (resultChar != 'y' && resultChar != 'n') {
             didIncorrectInput = true;
             errorMessage = "Unknown response, please type \"y\" or \"n\"";
@@ -260,6 +286,69 @@ int main() {
         isReady = true;
     }
 #pragma endregion
+#pragma endregion
+
+    system("cls");
+
+#pragma region Generation
+    for (size_t i = 0; i < boardSize * boardSize; i++) {
+        board[i] = 0;
+    }
+
+    for (size_t i = 0; i < nOfBombs; i++) {
+        int row = rand() % boardSize;
+        int col = rand() % boardSize;
+
+        board[row * boardSize + col] = IS_BOMB;
+    }
+#pragma endregion
+
+#pragma region Game Loop
+
+    isPlaying = true;
+    string letters = "ABCDEFGHIJ";
+
+    while (isPlaying) {
+#pragma region Rendering
+        for (size_t row = 0; row < (gameMode == 0 ? (boardSize + 1) : boardSize); row++) {
+            for (size_t col = 0; col < (gameMode == 0 ? (boardSize + 1) : boardSize); col++) {
+                if (gameMode == 0) {
+                    if (col == 0 && row == 0) write("    ");
+                    if (col == 0 && row != 0) write(to_string(row) + "  ");
+                    if (row == 0) write(string() + letters[col] + "  ");
+                    if (row == 0 || col == 0) continue;
+                }
+
+                int buffer = gameMode == 0 ? -1 : 0;
+                int cellType = board[(row + buffer) * boardSize + (col + buffer)];
+                switch (cellType) {
+                    case IS_DEFAULT:
+                        write(" ## ");
+                        break;
+
+                    case IS_MARKED:
+                        write(" \033[38;5;124m##\033[0m ");
+                        break;
+                    case IS_EMPTY:
+                        write(" \033[38;5;124m[ ]\033[0m ");
+                        break;
+                    case IS_NUMBER:
+                        write(" \033[38;5;124m 1 \033[0m ");
+                        break;
+                    case IS_BOMB:
+                        write(" \033[38;5;124m[ ]\033[0m ");
+                        break;
+                    default:
+                        write("Bruh?");
+                        break;
+                }
+            }
+            space();
+        }
+#pragma endregion
+        // Get input
+        system("pause");
+    }
 
 #pragma endregion
 
