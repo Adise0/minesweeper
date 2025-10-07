@@ -55,6 +55,7 @@ int main() {
     // Global
     bool didIncorrectInput = false;
     int size;
+    int nOfBombs;
 
 #pragma region GameMode
     bool hasChosenGameMode = false;
@@ -62,14 +63,7 @@ int main() {
 
     while (!hasChosenGameMode) {
 #pragma region Rendering
-        system("cls");
-        separator();
-        space();
-        writeLine("             \033[1;38;5;32mMINESWEEPER\033[0m");
-        writeLine("              \033[3mBy: Adise\033[0m");
-        space();
-        separator();
-        space();
+        renderTitle();
         writeLine("\033[1mGAME MODE:\033[0m");
         writeLine("  Select a game mode:");
         writeLine("  - \033[38;5;32m[0]\033[0m Type to play");
@@ -120,14 +114,7 @@ int main() {
 
     while (!isReady) {
 #pragma region Rendering
-        system("cls");
-        separator();
-        space();
-        writeLine("             \033[1;38;5;32mMINESWEEPER\033[0m");
-        writeLine("              \033[3mBy: Adise\033[0m");
-        space();
-        separator();
-        space();
+        renderTitle();
         writeLine("\033[1mHOW TO PLAY:\033[0m");
 
         if (gameMode == 1) {
@@ -183,22 +170,22 @@ int main() {
 
 #pragma region Board setup
 
-    bool isLocked = false;
     isReady = false;
     string errorMessage = "";
+    bool isSizePicked = false;
+    int maxBombs;
 
     while (!isReady) {
 #pragma region Rendering
-        system("cls");
-        separator();
-        space();
-        writeLine("             \033[1;38;5;32mMINESWEEPER\033[0m");
-        writeLine("              \033[3mBy: Adise\033[0m");
-        space();
-        separator();
-        space();
+        renderTitle();
         writeLine("\033[1mBOARD SETUP:\033[0m");
-        writeLine("  Input a board size \033[3m(1-10)\033[0m");
+        if (!isSizePicked)
+            writeLine("  Input a board size \033[3m(1-10)\033[0m");
+        else {
+            writeLine("  Board size -> \033[38;5;32m" + to_string(size) + "x" + to_string(size) +
+                      "\033[0m");
+            writeLine("  Input the number of bombs \033[3m(1-" + to_string(maxBombs) + ")\033[0m");
+        }
         space();
         separator();
         if (didIncorrectInput) {
@@ -208,11 +195,31 @@ int main() {
         space();
 #pragma endregion
         string result = ask();
-        try {
-            size = stoi(result);
-            if (size < 1 || size > 10) {
+        if (!isSizePicked) {
+            try {
+                size = stoi(result);
+                if (size < 1 || size > 10) {
+                    didIncorrectInput = true;
+                    errorMessage = "Invalid size, please type a number between 1 and 10";
+                    continue;
+                }
+            } catch (...) {
                 didIncorrectInput = true;
-                errorMessage = "Invalid size, please type a number between 1 and 10";
+                errorMessage = "Invalid input, please type a number";
+                continue;
+            }
+
+            maxBombs = size * size - 1;
+            isSizePicked = true;
+            didIncorrectInput = false;
+            continue;
+        }
+        try {
+            nOfBombs = stoi(result);
+            if (nOfBombs < 1 || nOfBombs > maxBombs) {
+                didIncorrectInput = true;
+                errorMessage = "Invalid number of bombs, please type a number between 1 and " +
+                               to_string(maxBombs);
                 continue;
             }
         } catch (...) {
