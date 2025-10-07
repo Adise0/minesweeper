@@ -1,3 +1,4 @@
-# Buscaminas
+# Minesweeper
 
-Repo de la pràctica de buscaminas del M03
+Welcome to the minesweeper repo.
+This is n exercise for M03 DAM-VIOD at Enti
