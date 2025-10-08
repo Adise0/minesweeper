@@ -15,7 +15,7 @@ using namespace std;
 #define MIN_BOARD_SIZE 4
 #define MIN_MINES 1
 #define RECOMENDED_MINE_DENSITY 0.2
-#define SKIP_QUESTIONS false
+#define SKIP_QUESTIONS true
 
 
 // #region ANSI CODES
@@ -54,11 +54,11 @@ using namespace std;
 // #endregion
 
 // #region Render sprites
-#define DEFAULT_SPRITE " ⬜ "
-#define EMPTY_SPRITE " ⬛ "
-#define MARKED_SPRITE " 🚩 "
-#define MINE_SPRITE " 💣 "
-#define MINE_EXPLODED_SPRITE " 💥 "
+#define DEFAULT_SPRITE "⬜ "
+#define EMPTY_SPRITE "⬛ "
+#define MARKED_SPRITE "🚩 "
+#define MINE_SPRITE "💣 "
+#define MINE_EXPLODED_SPRITE "💥 "
 // #endregion
 
 
@@ -68,7 +68,7 @@ using namespace std;
 #define IS_DEFAULT 0
 #define IS_MARKED 1
 #define IS_EMPTY 2
-#define IS_BOMB 3
+#define IS_MINE 3
 #define IS_NUMBER 4
 // #endregion
 
@@ -196,8 +196,9 @@ int main() {
     // #region Utils
     /**
      * LAMBDA EXPRESSIONS ARE STILL IN main()!
-     * Helper function to get the neighbour indexes at a given index;
      */
+
+    // Helper function to get neighbouring cells
     function<void(int index, int neighbours[NUM_NEIGHBOURS])> getNeighbours = [&boardSize](int index, int neighbours[NUM_NEIGHBOURS]) {
       // #region getNeighbours
       bool isLeft = index % boardSize == 0;
@@ -216,6 +217,75 @@ int main() {
       // #endregion
     };
 
+    // Helper function to render the board
+    function<void()> renderBoard = [&boardSize, &board, &truthBoard, &letters, &state]() {
+      // #region renderBoard
+      system("cls");
+
+      for (size_t row = 0; row < (boardSize + 1); row++) {
+        for (size_t col = 0; col < (boardSize + 1); col++) {
+          if (col == 0 && row == 0) WRITE "  ";
+          if (col == 0 && row != 0) WRITE(row < boardSize ? " " : "") + to_string(row) + " ";
+          if (row == 0 && col != 0) WRITE "  " + letters[col - 1];
+          if (row == 0 || col == 0) continue;
+
+          int buffer = -1;
+          int cellType = (state == IS_IN_GAME ? board : truthBoard)[(row + buffer) * boardSize + (col + buffer)];
+
+          if (cellType > IS_NUMBER) {
+            switch (cellType - IS_NUMBER) {
+            case 1:
+              WRITE NUM_1_COLOR;
+              break;
+            case 2:
+              WRITE NUM_2_COLOR;
+              break;
+            case 3:
+              WRITE NUM_3_COLOR;
+              break;
+            case 4:
+              WRITE NUM_4_COLOR;
+              break;
+            case 5:
+              WRITE NUM_5_COLOR;
+              break;
+            case 6:
+              WRITE NUM_6_COLOR;
+              break;
+            case 7:
+              WRITE NUM_7_COLOR;
+              break;
+            case 8:
+              WRITE NUM_8_COLOR;
+              break;
+            }
+            WRITE " " + to_string(cellType - IS_NUMBER) + RESET_FORMAT;
+            continue;
+          }
+          switch (cellType) {
+          case IS_DEFAULT:
+            WRITE DEFAULT_SPRITE;
+            break;
+          case IS_MARKED:
+            WRITE MARKED_SPRITE;
+            break;
+          case IS_EMPTY:
+            WRITE EMPTY_SPRITE;
+            break;
+          case IS_MINE:
+            WRITE MINE_SPRITE;
+            break;
+          default:
+            // This should never reach
+            WRITE DEFAULT_SPRITE;
+            break;
+          }
+        }
+        SPACE;
+      }
+
+      // #endregion
+    };
 
     // #endregion
 
@@ -343,7 +413,9 @@ int main() {
         persistentMessage += "Unknown response, please type \"y\" or \"n\"";
         // #endregion
       }
-      // TODO: Render util
+
+      renderBoard();
+      system("pause");
       // TODO: get cell util
       // TODO: Get initial cell
 
@@ -368,7 +440,7 @@ int main() {
           isValidPosition = mineIndex != cell;
           if (!isValidPosition) continue;
 
-          isValidPosition = truthBoard[mineIndex] != IS_BOMB;
+          isValidPosition = truthBoard[mineIndex] != IS_MINE;
           if (!isValidPosition) continue;
 
 
