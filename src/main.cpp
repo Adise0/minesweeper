@@ -161,10 +161,13 @@ int main() {
             writeLine("  Board size -> \033[38;5;32m" + to_string(boardSize) + "x" +
                       to_string(boardSize) + "\033[0m");
         }
-        if (!isNOfBombsPicked) {
-            writeLine("  Input the number of bombs \033[3m(1-" + to_string(maxBombs) + ")\033[0m");
-        } else {
-            writeLine("  Number of bombs -> \033[38;5;32m" + to_string(nOfBombs) + "\033[0m");
+        if (isSizePicked) {
+            if (!isNOfBombsPicked) {
+                writeLine("  Input the number of bombs \033[3m(1-" + to_string(maxBombs) +
+                          ")\033[0m");
+            } else {
+                writeLine("  Number of bombs -> \033[38;5;32m" + to_string(nOfBombs) + "\033[0m");
+            }
         }
         space();
         separator();
@@ -195,7 +198,7 @@ int main() {
                 continue;
             }
 
-            maxBombs = boardSize * boardSize - 1;
+            maxBombs = boardSize * boardSize - NUM_NEIGHBOURS;
             isSizePicked = true;
             didIncorrectInput = false;
             continue;
