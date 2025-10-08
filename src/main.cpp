@@ -215,7 +215,7 @@ int main() {
         }
         if (!isNOfBombsPicked) {
             try {
-                if (DEV_MODE) result = "1";
+                if (DEV_MODE) result = "50";
 
                 nOfBombs = stoi(result);
                 if (nOfBombs < 1 || nOfBombs > maxBombs) {
@@ -256,28 +256,20 @@ int main() {
 
     system("cls");
 
-#pragma region Generation
-    for (size_t i = 0; i < boardSize * boardSize; i++) {
-        truthBoard[i] = 0;
-        board[i] = 0;
-    }
-
-    for (size_t i = 0; i < nOfBombs; i++) {
-        int row = rand() % boardSize;
-        int col = rand() % boardSize;
-
-        truthBoard[row * boardSize + col] = IS_BOMB;
-    }
-#pragma endregion
-
     isPlaying = true;
     string letters = "ABCDEFGHIJ";
-    string keepMessage;
+    string keepMessage = "";
+
+    for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
+        truthBoard[cellIndex] = IS_EMPTY;
+        board[cellIndex] = IS_DEFAULT;
+    }
 
 #pragma region Board Rendering
 
     function<void()> renderBoard = [&boardSize, &write, &board, &truthBoard, &space, &isPlaying,
                                     &letters, &writeLine, &keepMessage]() {
+        system("cls");
         for (size_t row = 0; row < (boardSize + 1); row++) {
             for (size_t col = 0; col < (boardSize + 1); col++) {
                 if (col == 0 && row == 0) write("    ");
@@ -288,19 +280,20 @@ int main() {
                 int buffer = -1;
                 int cellType =
                     (isPlaying ? board : truthBoard)[(row + buffer) * boardSize + (col + buffer)];
+
+                if (cellType > IS_NUMBER) {
+                    write(" \033[38;5;124m " + to_string(cellType - IS_NUMBER) + " \033[0m ");
+                    continue;
+                }
                 switch (cellType) {
                     case IS_DEFAULT:
                         write(" ## ");
                         break;
-
                     case IS_MARKED:
                         write(" \033[38;5;124m##\033[0m ");
                         break;
                     case IS_EMPTY:
-                        write(" \033[38;5;124m[]\033[0m ");
-                        break;
-                    case IS_NUMBER:
-                        write(" \033[38;5;124m 1 \033[0m ");
+                        write("    ");
                         break;
                     case IS_BOMB:
                         write(" \033[38;5;124m[]\033[0m ");
@@ -313,6 +306,7 @@ int main() {
             space();
         }
         writeLine(keepMessage);
+        space();
         keepMessage = "";
     };
 #pragma endregion
@@ -328,9 +322,9 @@ int main() {
     function<void(int index, int neighbours[NUM_NEIGHBOURS])> getNeighbours =
         [&boardSize, &writeLine, &keepMessage](int index, int neighbours[NUM_NEIGHBOURS]) {
             bool isLeft = index % boardSize == 0;
-            bool isRight = index % boardSize == 9;
+            bool isRight = index % boardSize == boardSize - 1;
             bool isTop = index / boardSize == 0;
-            bool isBottom = int(index / boardSize) == 9;
+            bool isBottom = int(index / boardSize) == boardSize - 1;
 
             neighbours[NEIGHBOUR_TOP_LEFT] = (isTop || isLeft) ? -1 : index - boardSize - 1;
             neighbours[NEIGHBOUR_TOP] = isTop ? -1 : index - boardSize;
@@ -344,12 +338,25 @@ int main() {
             return neighbours;
         };
 
-    while (isPlaying) {
-        renderBoard();
-        int row = -1;
-        int col = -1;
-        char action = '\0';
+    function<void(int neighbours[], int cellIndex)> showNeighbours =
+        [&board, &truthBoard, &getNeighbours, &showNeighbours](int neighbours[], int cellIndex) {
+            if (board[cellIndex] != IS_DEFAULT) return;
 
+            board[cellIndex] = truthBoard[cellIndex];
+
+            int nestedNeighbours[NUM_NEIGHBOURS];
+            getNeighbours(cellIndex, nestedNeighbours);
+            for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
+                showNeighbours(nestedNeighbours, nestedNeighbours[neighbourIndex]);
+            }
+        };
+
+    int row = -1;
+    int col = -1;
+    char action = '\0';
+    int cell = row * boardSize + col;
+
+    function<void()> getInput = [&row, &col, &action, &ask, &inputRegX, &keepMessage]() {
         string input = ask();
         try {
             // // AI for regex matching syntax in c++. Modified ofc
@@ -367,41 +374,85 @@ int main() {
             }
             // End of syntax copy
         } catch (...) {
-            writeLine("Error reading input");
-            continue;
+            keepMessage +=
+                "\nInvalid input. Format is:\n"
+                "- \033[38;5;32m[Column][Row] [Action]\033[0m To pick the cell and "
+                "action.\n"
+                "OR"
+                "- \033[38;5;32m[Column][Row]\033[0m To pick the cell and "
+                "show the cell\n";
+        }
+    };
+
+    do {
+        renderBoard();
+        getInput();
+        if (action != 's') {
+            keepMessage += "\n Please open an initial cell";
+        }
+    } while (action != 's');
+
+#pragma region Generation
+
+    for (size_t i = 0; i < nOfBombs; i++) {
+        int bombIndex;
+
+        // Safety while to make sure no bomb is generated on the starting cell
+        do {
+            int row = rand() % boardSize;
+            int col = rand() % boardSize;
+            bombIndex = row * boardSize + col;
+        } while (bombIndex == cell);
+
+        truthBoard[bombIndex] = IS_BOMB;
+    }
+
+    for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
+        int neighbours[NUM_NEIGHBOURS];
+        getNeighbours(cell, neighbours);
+
+        int neighbouringBombs = 0;
+        for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
+            if (neighbours[neighbourIndex] == -1) continue;  // Ingore neighbours outside bounds
+            if (truthBoard[neighbours[neighbourIndex]] == IS_BOMB) neighbouringBombs++;
         }
 
-        int cellIndex = row * boardSize + col;
+        if (neighbouringBombs == 0)
+            truthBoard[cellIndex] = IS_EMPTY;
+        else {
+            truthBoard[cellIndex] =
+                IS_NUMBER + neighbouringBombs;  // Attach number directly to the cell type
+        }
+    }
+#pragma endregion
+
+    int neighbours[NUM_NEIGHBOURS];
+    getNeighbours(cell, neighbours);
+    showNeighbours(neighbours, cell);
+
+    renderBoard();
+
+    while (isPlaying) {
+        renderBoard();
+        getInput();
+        cell = row * boardSize + col;
 
         if (action == 'm') {
-            board[cellIndex] = IS_MARKED;
+            board[cell] = IS_MARKED;
         }
 
         if (action == 's') {
-            writeLine(to_string(cellIndex) + " " + to_string(truthBoard[cellIndex]));
-            if (truthBoard[cellIndex] == IS_BOMB) {
+            writeLine(to_string(cell) + " " + to_string(truthBoard[cell]));
+            if (truthBoard[cell] == IS_BOMB) {
                 isPlaying = false;
                 break;
             }
 
-            bool hasClearNeighbours = false;
-            int neighbours[NUM_NEIGHBOURS];
-            getNeighbours(cellIndex, neighbours);
-
-            do {
-                int bombCount = 0;
-                hasClearNeighbours = false;
-                for (size_t neighbour = 0; neighbour < NUM_NEIGHBOURS; neighbour++) {
-                    if (neighbours[neighbour] == -1) continue;
-
-                    int cellType = truthBoard[neighbours[neighbour]];
-                    if (cellType == IS_EMPTY) {
-                        hasClearNeighbours = true;
-                    }
-                }
-            } while (hasClearNeighbours);
-
-            system("cls");
+            if (board[cell] == IS_DEFAULT) {
+                int neighbours[NUM_NEIGHBOURS];
+                getNeighbours(cell, neighbours);
+                showNeighbours(neighbours, cell);
+            }
         }
     }
 
