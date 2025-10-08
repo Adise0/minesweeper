@@ -1,10 +1,17 @@
-BasedOnStyle: Google
-IndentWidth: 4
-ColumnLimit: 180
-IndentPPDirectives: AfterHash
-KeepEmptyLinesAtTheStartOfBlocks: true
-MacroBlockBegin: "^#pragma region"
-MacroBlockEnd: "^#pragma endregion"
-AllowShortIfStatementsOnASingleLine: true
-AllowShortLoopsOnASingleLine: true
-AllowShortFunctionsOnASingleLine: Empty
+IndentWidth: 2
+UseTab: Never
+DerivePointerAlignment: false
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+KeepEmptyLines:
+  AtEndOfFile: true
+  AtStartOfBlock: true
+  AtStartOfFile: true
+IndentPPDirectives: BeforeHash
+IndentCaseBlocks: true
+MaxEmptyLinesToKeep: 3
+BraceWrapping:
+  AfterNamespace: false
+  AfterCaseLabel: true
+  BeforeLambdaBody: true
+InsertTrailingCommas: Wrapped
+
