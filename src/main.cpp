@@ -167,6 +167,8 @@ int main() {
                 if (!isNOfBombsPicked) {
                     writeLine("  Input the number of bombs \033[3m(1-" + to_string(maxBombs) +
                               ")\033[0m");
+                    writeLine("   \033[3mRecommended: " + to_string(int(maxBombs * 0.20)) +
+                              "\033[0m");
                 } else {
                     writeLine("  Number of bombs -> \033[38;5;32m" + to_string(nOfBombs) +
                               "\033[0m");
@@ -201,7 +203,9 @@ int main() {
                     continue;
                 }
 
-                maxBombs = boardSize * boardSize - NUM_NEIGHBOURS;
+                // Size of the board - 8 (neighbours) for the start - 2 (One for the initial cell
+                // AND one for another free cell at least. else the game would insta end)
+                maxBombs = boardSize * boardSize - NUM_NEIGHBOURS - 2;
                 isSizePicked = true;
                 didIncorrectInput = false;
                 continue;
@@ -488,7 +492,7 @@ int main() {
         separator();
         space();
         writeLine("             " + string() +
-                  (hasWon ? "\033[1;38;5;32mYOU WON!" : "\033[1;38;5;146mGAME OVER!") + "\033[0m");
+                  (hasWon ? "\033[1;38;5;32mYOU WON!" : "\033[1;38;5;160mGAME OVER!") + "\033[0m");
         if (!hasWon) writeLine("              \033[3mGet good\033[0m");
 
         space();
