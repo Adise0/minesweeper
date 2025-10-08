@@ -3,6 +3,9 @@
 Welcome to the minesweeper repo.<br>
 This is an exercise for M03 of CFGS DAM-VIOD at Enti.
 
+## Compiling
+I use VsCode and so it does not come with the compiler by default. In order to use the cl.exe compiler we need to inject some enviroment variables into vsCode. Check out the setupEnv.bat script and replace the file path of `vcvarsall.bat`. Check out my path to have a reference on where to find it.
+
 ## Nuances
 
 - I did not use a 2D array for this exercise, instead, i used a flattened 1D array directly (it compiles to the same thing).
