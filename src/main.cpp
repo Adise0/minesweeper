@@ -1,3 +1,4 @@
+#include <functional>
 #include <iostream>
 #include <string>
 #include <windows.h>
@@ -12,7 +13,7 @@ using namespace std;
 // #region Source of truth
 #define MAX_BOARD_SIZE 10
 #define MIN_BOARD_SIZE 4
-#define MIN_MINES 4
+#define MIN_MINES 1
 #define RECOMENDED_MINE_DENSITY 0.2
 #define SKIP_QUESTIONS false
 
@@ -192,11 +193,38 @@ int main() {
     // #endregion
 
     // #region Main loop
+    // #region Utils
+    /**
+     * LAMBDA EXPRESSIONS ARE STILL IN main()!
+     * Helper function to get the neighbour indexes at a given index;
+     */
+    function<void(int index, int neighbours[NUM_NEIGHBOURS])> getNeighbours = [&boardSize](int index, int neighbours[NUM_NEIGHBOURS]) {
+      // #region getNeighbours
+      bool isLeft = index % boardSize == 0;
+      bool isRight = index % boardSize == boardSize - 1;
+      bool isTop = index / boardSize == 0;
+      bool isBottom = int(index / boardSize) == boardSize - 1;
+
+      neighbours[NEIGHBOUR_TOP_LEFT] = (isTop || isLeft) ? -1 : index - boardSize - 1;
+      neighbours[NEIGHBOUR_TOP] = isTop ? -1 : index - boardSize;
+      neighbours[NEIGHBOUR_TOP_RIGHT] = (isTop || isRight) ? -1 : index - boardSize + 1;
+      neighbours[NEIGHBOUR_RIGHT] = isRight ? -1 : index + 1;
+      neighbours[NEIGHBOUR_BOTTOM_RIGHT] = (isBottom || isRight) ? -1 : index + boardSize + 1;
+      neighbours[NEIGHBOUR_BOTTOM] = isBottom ? -1 : index + boardSize;
+      neighbours[NEIGHBOUR_BOTTOM_LEFT] = (isBottom || isLeft) ? -1 : index + boardSize - 1;
+      neighbours[NEIGHBOUR_LEFT] = isLeft ? -1 : index - 1;
+      // #endregion
+    };
+
+
+    // #endregion
+
     while (state == IS_IN_SETUP || state == IS_IN_GAME) {
       // #region Board setup
       bool isSizePicked = false;
       bool isNOfMinesPicked = false;
       int maxMines;
+      int cell;
 
       while (state == IS_IN_SETUP) {
         // #region Render
@@ -210,7 +238,7 @@ int main() {
 
         if (isSizePicked) {
           if (!isNOfMinesPicked) {
-            WRITE "  Input a board size " + ITALIC + "(" + to_string(MIN_MINES) + "-" + to_string(maxMines) + ")" + RESET_FORMAT ENDL;
+            WRITE "  Input the number of mines " + ITALIC + "(" + to_string(MIN_MINES) + "-" + to_string(maxMines) + ")" + RESET_FORMAT ENDL;
             WRITE ITALIC + "  Recommended mines: " + to_string(int(maxMines * RECOMENDED_MINE_DENSITY)) + RESET_FORMAT ENDL;
           } else {
             WRITE "  Number of MINES -> " + MAIN_COLOR + to_string(nOfMines) + RESET_FORMAT ENDL;
@@ -278,7 +306,7 @@ int main() {
           }
           if (nOfMines < MIN_MINES || nOfMines > maxMines) {
             didIncorrectInput = true;
-            persistentMessage += "Invalid number of bombs, please type a number between " + to_string(MIN_BOARD_SIZE) + " and " + to_string(maxMines);
+            persistentMessage += "Invalid number of mines, please type a number between " + to_string(MIN_BOARD_SIZE) + " and " + to_string(maxMines);
             continue;
           }
           didIncorrectInput = false;
@@ -315,13 +343,46 @@ int main() {
         persistentMessage += "Unknown response, please type \"y\" or \"n\"";
         // #endregion
       }
+      // TODO: Render util
+      // TODO: get cell util
+      // TODO: Get initial cell
 
       // #region Board generation
+      for (size_t i = 0; i < nOfMines; i++) {
+        int mineIndex;
+        bool isValidPosition = false;
+
+        while (!isValidPosition) {
+          isValidPosition = true; // Expect a vlaid position
+
+          int row = rand() % boardSize;
+          int col = rand() % boardSize;
+
+          mineIndex = row * boardSize + col; // Flattened 2D array syntax
+
+          /**
+           * These early simple checks "break" early.
+           * They avoid the computation, even if small, from `getNeighbours` if the valid condition already fails.
+           */
+
+          isValidPosition = mineIndex != cell;
+          if (!isValidPosition) continue;
+
+          isValidPosition = truthBoard[mineIndex] != IS_BOMB;
+          if (!isValidPosition) continue;
 
 
+          int mineNeighbours[NUM_NEIGHBOURS];
+          getNeighbours(mineIndex, mineNeighbours);
+
+          for (size_t i = 0; i < NUM_NEIGHBOURS; i++) {
+            int neighbourIndex = mineNeighbours[i];
+            if (neighbourIndex == -1) continue; // Ignore neighbours that are out of bounds
+            if (neighbourIndex == mineIndex) isValidPosition = false;
+          }
+        }
+      }
       // #endregion
-
-
       // #endregion
     }
     // #endregion
