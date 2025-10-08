@@ -158,7 +158,7 @@ int main() {
             renderTitle();
             writeLine("\033[1mBOARD SETUP:\033[0m");
             if (!isSizePicked)
-                writeLine("  Input a board size \033[3m(1-10)\033[0m");
+                writeLine("  Input a board size \033[3m(4-10)\033[0m");
             else {
                 writeLine("  Board size -> \033[38;5;32m" + to_string(boardSize) + "x" +
                           to_string(boardSize) + "\033[0m");
@@ -190,9 +190,9 @@ int main() {
             if (!isSizePicked) {
                 try {
                     boardSize = stoi(result);
-                    if (boardSize < 1 || boardSize > 10) {
+                    if (boardSize < 4 || boardSize > 10) {
                         didIncorrectInput = true;
-                        errorMessage = "Invalid size, please type a number between 1 and 10";
+                        errorMessage = "Invalid size, please type a number between 4 and 10";
                         continue;
                     }
                 } catch (...) {
