@@ -65,18 +65,20 @@ filesToCompile = filesToCompile.filter((filePath) => !filePath.endsWith(".h"));
 
 if (filesToCompile.length != 0) {
   execSync(
-    `cl.exe /Zi /EHsc /nologo /Fobuild/objects/  ${filesToCompile.join(
+    `cl.exe /Zi /Od /EHsc /nologo /Fobuild/objects/ /Fdbuild/compiler.pdb ${filesToCompile.join(
       " "
     )} /c`,
     {
       stdio: "inherit",
+      shell: true,
     }
   );
 
   execSync(
-    `cl.exe /nologo /Fe:build/app.exe build/objects/*.obj /Fd:build/app.pdb`,
+    `link.exe /OUT:"build/app.exe" /DEBUG /PDB:"build/app.pdb" build/objects/*.obj`,
     {
       stdio: "inherit",
+      shell: true,
     }
   );
 }

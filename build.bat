@@ -16,17 +16,13 @@ setlocal enabledelayedexpansion
 @REM cl.exe /Zi /EHsc /nologo /Fobuild\objects\ /Fdbuild\\app.pdb /Febuild\\app.exe !FILES!
 
 call node ./build.js
-
 endlocal
 
-if(%ERRORLEVEL% NEQ 0) (
-  echo ==============================
+if errorlevel 1 (
   echo Build failed.
-
-  exit /b %ERRORLEVEL%
+  exit /b %errorlevel%
 ) else (
-  echo ==============================
-    echo Build succeeded.
+  echo Build succeeded. 
+  cls
 )
-
 
