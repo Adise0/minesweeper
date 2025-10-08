@@ -10,7 +10,10 @@ using namespace std;
  */
 
 // #region Source of truth
-#define BOARD_SIZE 10
+#define MAX_BOARD_SIZE 10
+#define MIN_BOARD_SIZE 4
+#define MIN_MINES 4
+#define RECOMENDED_MINE_DENSITY 0.2
 #define SKIP_QUESTIONS false
 
 
@@ -39,6 +42,14 @@ using namespace std;
 #define ENDL << endl
 #define SPACE cout << endl
 #define ASK cin >>
+#define TITLE                                                                                                                                                                      \
+  SEPARATOR;                                                                                                                                                                       \
+  SPACE;                                                                                                                                                                           \
+  WRITE "             " + MAIN_COLOR + " MINESWEEPER" + RESET_FORMAT ENDL;                                                                                                         \
+  WRITE "              " + ITALIC + "By: Adise" + RESET_FORMAT ENDL;                                                                                                               \
+  SPACE;                                                                                                                                                                           \
+  SEPARATOR;                                                                                                                                                                       \
+  SPACE;
 // #endregion
 
 // #region Render sprites
@@ -74,9 +85,10 @@ using namespace std;
 
 // #region State
 // Poor man's enum
+#define IS_IN_PRESENTATION 0
 #define IS_IN_SETUP 0
-#define IS_IN_GAME 1
-#define IS_IN_END_SCREEN 2
+#define IS_IN_GAME 2
+#define IS_IN_END_SCREEN 3
 // #endregion
 // #endregion
 // #endregion
@@ -91,12 +103,13 @@ int main() {
   // #endregion
 
   // #region Global variables
-  int state = IS_IN_SETUP;
+  int state = IS_IN_PRESENTATION;
   bool didIncorrectInput = false;
   int boardSize;
-  int nOfBombs;
-  int truthBoard[BOARD_SIZE * BOARD_SIZE];
-  int board[BOARD_SIZE * BOARD_SIZE];
+  int nOfMines;
+  int truthBoard[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
+  int board[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
+  string letters = "ABCDEFGHIJ";
 
   string persistentMessage = "";
   // #endregion
@@ -104,7 +117,7 @@ int main() {
   // #region Runner
   while (true) {
     // #region Board cleanup
-    for (size_t cellIndex = 0; cellIndex < BOARD_SIZE * BOARD_SIZE; cellIndex++) {
+    for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
       truthBoard[cellIndex] = IS_EMPTY;
       board[cellIndex] = IS_DEFAULT;
     }
@@ -115,18 +128,14 @@ int main() {
      * We could replace this bool-while with a do-while and check the output directly, but this is cleaner
      * more mantainable and more readable
      */
-    bool isReady = false;
-    while (!isReady) {
+    // #region How to play
+
+    while (state == IS_IN_PRESENTATION) {
       // #region Render
       CLEAR_TERMINAL;
 
-      SEPARATOR;
-      SPACE;
-      WRITE "             " + MAIN_COLOR + " MINESWEEPER" + RESET_FORMAT ENDL;
-      WRITE "              " + ITALIC + "By: Adise" + RESET_FORMAT ENDL;
-      SPACE;
-      SEPARATOR;
-      SPACE;
+      TITLE
+
       WRITE MAIN_COLOR + "HOW TO PLAY:" + RESET_FORMAT ENDL;
       WRITE "  Type " + MAIN_COLOR + "[Column][Row][Action]" + RESET_FORMAT + " To pick a cell and perform the desired action.";
       WRITE ITALIC + " (Spacing does not matter)" + RESET_FORMAT ENDL;
@@ -165,7 +174,7 @@ int main() {
 
       if (resultChar == 'y') {
         didIncorrectInput = false;
-        isReady = true;
+        state = IS_IN_SETUP;
         break;
       }
 
@@ -173,12 +182,145 @@ int main() {
       persistentMessage += "Unknown response, please type \"y\" or \"n\"";
       // #endregion
     }
+    // #endregion
+    // #endregion
+
+    // #region Main loop
+    while (state == IS_IN_SETUP || state == IS_IN_GAME) {
+      // #region Board setup
+      bool isSizePicked = false;
+      bool isNOfMinesPicked = false;
+      int maxMines;
+
+      while (state == IS_IN_SETUP) {
+        // #region Render
+        CLEAR_TERMINAL;
+
+        TITLE
+
+        WRITE MAIN_COLOR + "BOARD SETUP:" + RESET_FORMAT ENDL;
+        if (!isSizePicked) WRITE "  Input a board size " + ITALIC + "(" + to_string(MIN_BOARD_SIZE) + "-" + to_string(MAX_BOARD_SIZE) + ")" + RESET_FORMAT ENDL;
+        else WRITE "  Board size -> " + MAIN_COLOR + to_string(boardSize) + "x" + to_string(boardSize) + RESET_FORMAT ENDL;
+
+        if (isSizePicked) {
+          if (!isNOfMinesPicked) {
+            WRITE "  Input a board size " + ITALIC + "(" + to_string(MIN_MINES) + "-" + to_string(maxMines) + ")" + RESET_FORMAT ENDL;
+            WRITE ITALIC + "  Recommended mines: " + to_string(int(maxMines * RECOMENDED_MINE_DENSITY)) + RESET_FORMAT ENDL;
+          } else {
+            WRITE "  Number of MINES -> " + MAIN_COLOR + to_string(nOfMines) + RESET_FORMAT ENDL;
+          }
+        }
+        SPACE;
+        SPACE;
+        SEPARATOR;
+        if (didIncorrectInput) {
+          SPACE;
+          WRITE persistentMessage ENDL;
+
+          persistentMessage = "";
+        }
+        SPACE;
+        // #endregion
+
+        // #region Asking
+        if (isSizePicked && isNOfMinesPicked) WRITE "Are you ready? " + ITALIC + "(y/n)" + RESET_FORMAT ENDL;
+        string result;
+
+
+        if (!isSizePicked) {
+
+          if (!SKIP_QUESTIONS) ASK result;
+          else result = "10";
+
+          try {
+            boardSize = stoi(result);
+          } catch (...) {
+            didIncorrectInput = true;
+            persistentMessage += "Invalid input, please type a number";
+            continue;
+          }
+
+          if (boardSize < MIN_BOARD_SIZE || boardSize > MAX_BOARD_SIZE) {
+            didIncorrectInput = true;
+            persistentMessage += "Invalid size, please type a number between " + to_string(MIN_BOARD_SIZE) + " and " + to_string(MAX_BOARD_SIZE);
+            continue;
+          }
+          /**
+         * Max mines is calculated by taking the amounf of cells in the picked board and removing:
+         * - (8) The number of possible neighbours of the initial cell, since we want the initial cell to be clear
+         * - (1) The actual initial shown cell
+         * - (1) To have space for a free space somewhere else on the map, since if not, the game would instantly end uppon opening the first cell
+         */
+          maxMines = boardSize * boardSize - NUM_NEIGHBOURS - 2;
+
+          didIncorrectInput = false;
+          isSizePicked = true;
+          continue;
+        }
+
+        if (!isNOfMinesPicked) {
+
+          if (!SKIP_QUESTIONS) ASK result;
+          else result = "18";
+
+          try {
+            nOfMines = stoi(result);
+          } catch (...) {
+            didIncorrectInput = true;
+            persistentMessage += "Invalid input, please type a number";
+            continue;
+          }
+          if (nOfMines < MIN_MINES || nOfMines > maxMines) {
+            didIncorrectInput = true;
+            persistentMessage += "Invalid number of bombs, please type a number between " + to_string(MIN_BOARD_SIZE) + " and " + to_string(maxMines);
+            continue;
+          }
+          didIncorrectInput = false;
+          isNOfMinesPicked = true;
+          continue;
+        }
+
+
+        if (!SKIP_QUESTIONS) ASK result;
+        else result = "y";
+
+        char resultChar;
+        try {
+          resultChar = tolower(result[0]);
+        } catch (...) {
+          didIncorrectInput = true;
+          persistentMessage += "Invalid input, please type a number";
+        }
+
+        if (resultChar == 'n') {
+          //Resets this loop and asks again
+          isSizePicked = false;
+          isNOfMinesPicked = false;
+          didIncorrectInput = false;
+          continue;
+        }
+
+        if (resultChar == 'y') {
+          didIncorrectInput = false;
+          break;
+        }
+
+        didIncorrectInput = true;
+        persistentMessage += "Unknown response, please type \"y\" or \"n\"";
+        // #endregion
+      }
+
+      // #region Board generation
+
+
+      // #endregion
+
+
+      // #endregion
+    }
+    // #endregion
 
     system("pause");
-    // #region How to play
-
-    // #endregion
-    // #endregion
   }
   // #endregion
 }
