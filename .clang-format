@@ -1,4 +1,5 @@
 IndentWidth: 2
+ColumnLimit: 180
 UseTab: Never
 DerivePointerAlignment: false
 AllowShortIfStatementsOnASingleLine: AllIfsAndElse
@@ -6,12 +7,13 @@ KeepEmptyLines:
   AtEndOfFile: true
   AtStartOfBlock: true
   AtStartOfFile: true
-IndentPPDirectives: BeforeHash
 IndentCaseBlocks: true
 MaxEmptyLinesToKeep: 3
+
 BraceWrapping:
   AfterNamespace: false
   AfterCaseLabel: true
   BeforeLambdaBody: true
-InsertTrailingCommas: Wrapped
 
+BreakStringLiterals: false
+ReflowComments: Never
