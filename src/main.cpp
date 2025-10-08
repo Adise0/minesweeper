@@ -13,7 +13,7 @@
 using namespace std;
 
 #define MATRIX_SIZE 10
-#define DEV_MODE true
+#define DEV_MODE false
 
 #pragma region Truth tables
 #pragma region Cell type
@@ -440,6 +440,8 @@ int main() {
     getNeighbours(cell, neighbours);
     showNeighbours(neighbours, cell);
 
+    bool hasWon = false;
+
     while (isPlaying) {
         renderBoard();
         getInput();
@@ -451,6 +453,7 @@ int main() {
         if (action == 's') {
             writeLine(to_string(cell) + " " + to_string(truthBoard[cell]));
             if (truthBoard[cell] == IS_BOMB) {
+                hasWon = false;
                 isPlaying = false;
                 break;
             }
@@ -461,12 +464,21 @@ int main() {
                 showNeighbours(neighbours, cell);
             }
         }
+
+        for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
+            if (truthBoard[cellIndex] == IS_BOMB) continue;
+            if (board[cellIndex] == IS_DEFAULT) break;
+            if (board[cellIndex] == IS_MARKED) break;
+
+            isPlaying = false;
+            hasWon = true;
+        }
     }
 
     system("cls");
-    writeLine("GAME OVER!");
-    space();
     renderBoard();
+    writeLine(hasWon ? "YOU WIN" : "GAME OVER!");
+    space();
 
 #pragma endregion
     // Get input
