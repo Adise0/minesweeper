@@ -3,6 +3,12 @@
 Welcome to the minesweeper repo.<br>
 This is an exercise for M03 of CFGS DAM-VIOD at Enti.
 
+## Nuances
+
+- I did not use a 2D array for this exercise, instead, i used a flattened 1D array directly (it compiles to the same thing).
+- I added the safeguard of the first cell ALLWAYS being empty (no neighbouring bombs).
+- Because of the point above the min board size is 4x4, since in a 3x3 board, the center cell could not be empty while the board having a bomb, same for lower numbers.
+
 ## Code comments
 
 Normally I'm `VERY` much againt's writing comments.
