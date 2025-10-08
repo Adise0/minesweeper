@@ -81,7 +81,7 @@ int main() {
     // Global
     int boardSize;
     int nOfBombs;
-    bool isPlaying;
+    bool isPlaying = true;
     int truthBoard[MATRIX_SIZE * MATRIX_SIZE];
     int board[MATRIX_SIZE * MATRIX_SIZE];
 
@@ -202,7 +202,7 @@ int main() {
         }
         if (!isNOfBombsPicked) {
             try {
-                if (DEV_MODE) result = "50";
+                if (DEV_MODE) result = "10";
 
                 nOfBombs = stoi(result);
                 if (nOfBombs < 1 || nOfBombs > maxBombs) {
@@ -243,7 +243,6 @@ int main() {
 
     system("cls");
 
-    isPlaying = true;
     string letters = "ABCDEFGHIJ";
     string keepMessage = "";
 
@@ -269,7 +268,7 @@ int main() {
                     (isPlaying ? board : truthBoard)[(row + buffer) * boardSize + (col + buffer)];
 
                 if (cellType > IS_NUMBER) {
-                    write(" \033[38;5;124m " + to_string(cellType - IS_NUMBER) + " \033[0m ");
+                    write("\033[38;5;124m " + to_string(cellType - IS_NUMBER) + "  \033[0m");
                     continue;
                 }
                 switch (cellType) {
@@ -280,7 +279,7 @@ int main() {
                         write(" \033[38;5;124m##\033[0m ");
                         break;
                     case IS_EMPTY:
-                        write("    ");
+                        write(" __ ");
                         break;
                     case IS_BOMB:
                         write(" \033[38;5;124m[]\033[0m ");
@@ -326,10 +325,12 @@ int main() {
         };
 
     function<void(int neighbours[], int cellIndex)> showNeighbours =
-        [&board, &truthBoard, &getNeighbours, &showNeighbours](int neighbours[], int cellIndex) {
+        [&board, &truthBoard, &getNeighbours, &showNeighbours, &writeLine](int neighbours[],
+                                                                           int cellIndex) {
             if (board[cellIndex] != IS_DEFAULT) return;
 
             board[cellIndex] = truthBoard[cellIndex];
+            if (truthBoard[cellIndex] != IS_EMPTY) return;
 
             int nestedNeighbours[NUM_NEIGHBOURS];
             getNeighbours(cellIndex, nestedNeighbours);
@@ -343,7 +344,8 @@ int main() {
     char action = '\0';
     int cell = row * boardSize + col;
 
-    function<void()> getInput = [&row, &col, &action, &ask, &inputRegX, &keepMessage]() {
+    function<void()> getInput = [&row, &col, &action, &ask, &inputRegX, &keepMessage, &boardSize,
+                                 &cell]() {
         string input = ask();
         try {
             // // AI for regex matching syntax in c++. Modified ofc
@@ -358,6 +360,8 @@ int main() {
 
                 col = colChar - 'A';
                 row = rowNum - 1;
+
+                cell = row * boardSize + col;
             }
             // End of syntax copy
         } catch (...) {
@@ -385,24 +389,43 @@ int main() {
         int bombIndex;
 
         // Safety while to make sure no bomb is generated on the starting cell
+        bool isTooClose = false;
         do {
+            isTooClose = false;
             int row = rand() % boardSize;
             int col = rand() % boardSize;
             bombIndex = row * boardSize + col;
-        } while (bombIndex == cell);
+
+            int bombNeighbours[NUM_NEIGHBOURS];
+            getNeighbours(bombIndex, bombNeighbours);
+
+            for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
+                if (bombNeighbours[neighbourIndex] == -1) continue;
+                if (bombNeighbours[neighbourIndex] == cell) isTooClose = true;
+            }
+
+        } while (bombIndex == cell || truthBoard[bombIndex] == IS_BOMB || isTooClose);
 
         truthBoard[bombIndex] = IS_BOMB;
     }
 
     for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
+        if (truthBoard[cellIndex] == IS_BOMB) continue;
+
         int neighbours[NUM_NEIGHBOURS];
-        getNeighbours(cell, neighbours);
+        getNeighbours(cellIndex, neighbours);
 
         int neighbouringBombs = 0;
+        space();
         for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
             if (neighbours[neighbourIndex] == -1) continue;  // Ingore neighbours outside bounds
+            write(to_string(neighbourIndex) + " " +
+                  to_string(truthBoard[neighbours[neighbourIndex]]) + " | ");
             if (truthBoard[neighbours[neighbourIndex]] == IS_BOMB) neighbouringBombs++;
         }
+
+        writeLine("Cell " + to_string(cellIndex) + " has " + to_string(neighbouringBombs) +
+                  " bombs");
 
         if (neighbouringBombs == 0)
             truthBoard[cellIndex] = IS_EMPTY;
@@ -417,12 +440,9 @@ int main() {
     getNeighbours(cell, neighbours);
     showNeighbours(neighbours, cell);
 
-    renderBoard();
-
     while (isPlaying) {
         renderBoard();
         getInput();
-        cell = row * boardSize + col;
 
         if (action == 'm') {
             board[cell] = IS_MARKED;
@@ -435,7 +455,7 @@ int main() {
                 break;
             }
 
-            if (board[cell] == IS_DEFAULT) {
+            if (board[cell] == IS_DEFAULT || board[cell] == IS_MARKED) {
                 int neighbours[NUM_NEIGHBOURS];
                 getNeighbours(cell, neighbours);
                 showNeighbours(neighbours, cell);
