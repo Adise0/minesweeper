@@ -164,7 +164,13 @@ int main() {
 
       string result = "y";
       if (!SKIP_QUESTIONS) ASK result;
-      char resultChar = tolower(result[0]);
+      char resultChar;
+      try {
+        resultChar = tolower(result[0]);
+      } catch (...) {
+        didIncorrectInput = true;
+        persistentMessage += "Invalid input, please type a y or n";
+      }
 
       if (resultChar == 'n') {
         WRITE "Goodbye then!" ENDL;
@@ -289,7 +295,7 @@ int main() {
           resultChar = tolower(result[0]);
         } catch (...) {
           didIncorrectInput = true;
-          persistentMessage += "Invalid input, please type a number";
+          persistentMessage += "Invalid input, please type a y or n";
         }
 
         if (resultChar == 'n') {
