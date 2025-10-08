@@ -280,7 +280,34 @@ int main() {
                                    : truthBoard)[(row + buffer) * boardSize + (col + buffer)];
 
                     if (cellType > IS_NUMBER) {
-                        write("\033[38;5;124m " + to_string(cellType - IS_NUMBER) + "  \033[0m");
+                        write("\033[38;5;");
+                        switch (cellType - IS_NUMBER) {
+                            case 1:
+                                write("21m");
+                                break;
+                            case 2:
+                                write("28m");
+                                break;
+                            case 3:
+                                write("160m");
+                                break;
+                            case 4:
+                                write("18m");
+                                break;
+                            case 5:
+                                write("88m");
+                                break;
+                            case 6:
+                                write("31m");
+                                break;
+                            case 7:
+                                write("255m");
+                                break;
+                            case 8:
+                                write("242m");
+                                break;
+                        }
+                        write(" " + to_string(cellType - IS_NUMBER) + "  \033[0m");
                         continue;
                     }
                     switch (cellType) {
