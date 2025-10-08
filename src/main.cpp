@@ -63,20 +63,7 @@ int main() {
         getline(cin, result);
         return result;
     };
-    function<int()> getArrowKey = []() {
-        int key = _getch();
 
-        switch (key) {
-            case ARROW_UP_CODE:
-                return ARROW_UP;
-            case ARROW_DOWN_CODE:
-                return ARROW_DOWN;
-            case ARROW_LEFT_CODE:
-                return ARROW_LEFT;
-            case ARROW_RIGHT_CODE:
-                return ARROW_RIGHT;
-        }
-    };
     function<void()> renderTitle = [&separator, &space, &writeLine]() {
         system("cls");
         separator();
