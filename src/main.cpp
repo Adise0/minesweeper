@@ -58,8 +58,8 @@ using namespace std;
 // #endregion
 
 // #region Render sprites
-#define DEFAULT_SPRITE "⬜ "
-#define EMPTY_SPRITE "⬛ "
+#define DEFAULT_SPRITE "⬛ "
+#define EMPTY_SPRITE "⬜ "
 #define MARKED_SPRITE "🚩 "
 #define MINE_SPRITE "💣 "
 #define MINE_EXPLODED_SPRITE "💥 "
