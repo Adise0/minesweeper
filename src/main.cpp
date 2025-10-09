@@ -16,7 +16,7 @@ using namespace std;
 #define MIN_BOARD_SIZE 4
 #define MIN_MINES 1
 #define RECOMENDED_MINE_DENSITY 0.2
-#define SKIP_QUESTIONS true
+#define SKIP_QUESTIONS false
 #define IS_DEBUGGING_BOARD false
 
 
@@ -123,13 +123,6 @@ int main() {
 
   // #region Runner
   while (true) {
-    // #region Board cleanup
-    for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
-      truthBoard[cellIndex] = IS_EMPTY;
-      board[cellIndex] = IS_DEFAULT;
-    }
-    // #endregion
-
     // #region Presentation
     /**
      * We could replace this bool-while with a do-while and check the output directly, but this is cleaner
@@ -202,6 +195,14 @@ int main() {
     // #region Main loop
     while (state == IS_IN_SETUP || state == IS_IN_GAME) {
       // #region Board setup
+      // #region Board cleanup
+      for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
+        truthBoard[cellIndex] = IS_EMPTY;
+        board[cellIndex] = IS_DEFAULT;
+      }
+      // #endregion
+
+
       bool isSizePicked = false;
       bool isNOfMinesPicked = false;
       int maxMines = 1;
@@ -241,7 +242,7 @@ int main() {
         for (size_t row = 0; row < (boardSize + 1); row++) {
           for (size_t col = 0; col < (boardSize + 1); col++) {
             if (col == 0 && row == 0) WRITE "  ";
-            if (col == 0 && row != 0) WRITE(row < boardSize ? " " : "") + to_string(row) + " ";
+            if (col == 0 && row != 0) WRITE(row < 10 ? " " : "") + to_string(row) + " ";
             if (row == 0 && col != 0) WRITE "  " + letters[col - 1];
             if (row == 0 || col == 0) continue;
 
@@ -495,7 +496,6 @@ int main() {
           persistentMessage += "\n Please open an initial cell";
         }
       } while (currentAction != 's');
-      system("pause");
       // #region Board generation
       for (size_t i = 0; i < nOfMines; i++) {
         int mineIndex;
@@ -513,20 +513,20 @@ int main() {
            * They avoid the computation, even if small, from `getNeighbours` if the valid condition already fails.
            */
 
-          // isTooClose = mineIndex == currentCell;
-          // if (isTooClose) continue;
+          isTooClose = mineIndex == currentCell;
+          if (isTooClose) continue;
 
-          // isTooClose = truthBoard[mineIndex] == IS_MINE;
-          // if (isTooClose) continue;
+          isTooClose = truthBoard[mineIndex] == IS_MINE;
+          if (isTooClose) continue;
 
 
           int mineNeighbours[NUM_NEIGHBOURS];
           getNeighbours(mineIndex, mineNeighbours);
 
-          for (size_t i = 0; i < NUM_NEIGHBOURS; i++) {
-            int neighbourIndex = mineNeighbours[i];
+          for (size_t neighbour = 0; neighbour < NUM_NEIGHBOURS; neighbour++) {
+            int neighbourIndex = mineNeighbours[neighbour];
             if (neighbourIndex == -1) continue; // Ignore neighbours that are out of bounds
-            if (neighbourIndex == mineIndex) isTooClose = true;
+            if (neighbourIndex == currentCell) isTooClose = true;
           }
         } while (mineIndex == currentCell || truthBoard[mineIndex] == IS_MINE || isTooClose);
 
@@ -602,7 +602,7 @@ int main() {
       SEPARATOR;
       SPACE;
 
-      while (true) {
+      while (state == IS_IN_END_SCREEN) {
         WRITE "Fancy another game? " + ITALIC + "(y/n)" + RESET_FORMAT ENDL;
         string input;
         ASK;
@@ -615,15 +615,13 @@ int main() {
         }
 
         if (resultChar == 'n') {
-          //Resets this loop and asks again
-          isSizePicked = false;
-          isNOfMinesPicked = false;
-          didIncorrectInput = false;
-          continue;
+          WRITE "Goodbye then!" ENDL;
+          system("pause");
+          return 0;
         }
 
         if (resultChar == 'y') {
-          didIncorrectInput = false;
+          state == IS_IN_SETUP;
           break;
         }
 
@@ -633,8 +631,6 @@ int main() {
       // #endregion
     }
     // #endregion
-
-    system("pause");
   }
   // #endregion
 }
