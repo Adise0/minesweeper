@@ -202,7 +202,6 @@ int main() {
       }
       // #endregion
 
-
       bool isSizePicked = false;
       bool isNOfMinesPicked = false;
       int maxMines = 1;
@@ -621,13 +620,15 @@ int main() {
         }
 
         if (resultChar == 'y') {
-          state == IS_IN_SETUP;
+          state = IS_IN_SETUP;
+          didIncorrectInput = false;
           break;
         }
 
         didIncorrectInput = true;
         persistentMessage += "Unknown response, please type \"y\" or \"n\"";
       }
+
       // #endregion
     }
     // #endregion
