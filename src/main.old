@@ -232,9 +232,8 @@ int main() {
         didIncorrectInput = false;
         continue;
       }
-
-      isReady = true;
     }
+    isReady = true;
 #pragma endregion
 #pragma endregion
 

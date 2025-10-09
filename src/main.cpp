@@ -1,5 +1,6 @@
 #include <functional>
 #include <iostream>
+#include <regex>
 #include <string>
 #include <windows.h>
 
@@ -16,6 +17,8 @@ using namespace std;
 #define MIN_MINES 1
 #define RECOMENDED_MINE_DENSITY 0.2
 #define SKIP_QUESTIONS true
+#define IS_DEBUGGING_BOARD false
+
 
 
 // #region ANSI CODES
@@ -24,6 +27,7 @@ using namespace std;
 
 // #region Colors
 #define MAIN_COLOR "\033[38;5;27m"
+#define LOST_COLOR "\033[38;5;160m"
 
 #define NUM_1_COLOR "\033[38;5;21m"
 #define NUM_2_COLOR "\033[38;5;28m"
@@ -36,13 +40,13 @@ using namespace std;
 // #endregion
 // #endregion
 
-// #region Render utils
+// #region Console utils
 #define CLEAR_TERMINAL system("cls")
 #define SEPARATOR cout << "======================================" << endl
 #define WRITE cout << string() +
 #define ENDL << endl
 #define SPACE cout << endl
-#define ASK cin >>
+#define ASK getline(cin, input)
 #define TITLE                                                                                                                                                                      \
   SEPARATOR;                                                                                                                                                                       \
   SPACE;                                                                                                                                                                           \
@@ -110,8 +114,10 @@ int main() {
   int nOfMines;
   int truthBoard[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
   int board[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
+  int currentCell;
   string letters = "ABCDEFGHIJ";
-
+  string maxChar;
+  regex inputRegX;
   string persistentMessage = "";
   // #endregion
 
@@ -163,16 +169,17 @@ int main() {
       // #region Asking
       WRITE "Are you ready? " + ITALIC + "(y/n)" + RESET_FORMAT ENDL;
 
-      string result = "y";
-      if (!SKIP_QUESTIONS) ASK result;
       char resultChar;
       try {
-        resultChar = tolower(result[0]);
+        string input = "y";
+        if (!SKIP_QUESTIONS) ASK;
+        resultChar = tolower(input[0]);
       } catch (...) {
+
         didIncorrectInput = true;
         persistentMessage += "Invalid input, please type a y or n";
+        continue;
       }
-
       if (resultChar == 'n') {
         WRITE "Goodbye then!" ENDL;
         system("pause");
@@ -193,108 +200,167 @@ int main() {
     // #endregion
 
     // #region Main loop
-    // #region Utils
-    /**
-     * LAMBDA EXPRESSIONS ARE STILL IN main()!
-     */
-
-    // Helper function to get neighbouring cells
-    function<void(int index, int neighbours[NUM_NEIGHBOURS])> getNeighbours = [&boardSize](int index, int neighbours[NUM_NEIGHBOURS]) {
-      // #region getNeighbours
-      bool isLeft = index % boardSize == 0;
-      bool isRight = index % boardSize == boardSize - 1;
-      bool isTop = index / boardSize == 0;
-      bool isBottom = int(index / boardSize) == boardSize - 1;
-
-      neighbours[NEIGHBOUR_TOP_LEFT] = (isTop || isLeft) ? -1 : index - boardSize - 1;
-      neighbours[NEIGHBOUR_TOP] = isTop ? -1 : index - boardSize;
-      neighbours[NEIGHBOUR_TOP_RIGHT] = (isTop || isRight) ? -1 : index - boardSize + 1;
-      neighbours[NEIGHBOUR_RIGHT] = isRight ? -1 : index + 1;
-      neighbours[NEIGHBOUR_BOTTOM_RIGHT] = (isBottom || isRight) ? -1 : index + boardSize + 1;
-      neighbours[NEIGHBOUR_BOTTOM] = isBottom ? -1 : index + boardSize;
-      neighbours[NEIGHBOUR_BOTTOM_LEFT] = (isBottom || isLeft) ? -1 : index + boardSize - 1;
-      neighbours[NEIGHBOUR_LEFT] = isLeft ? -1 : index - 1;
-      // #endregion
-    };
-
-    // Helper function to render the board
-    function<void()> renderBoard = [&boardSize, &board, &truthBoard, &letters, &state]() {
-      // #region renderBoard
-      system("cls");
-
-      for (size_t row = 0; row < (boardSize + 1); row++) {
-        for (size_t col = 0; col < (boardSize + 1); col++) {
-          if (col == 0 && row == 0) WRITE "  ";
-          if (col == 0 && row != 0) WRITE(row < boardSize ? " " : "") + to_string(row) + " ";
-          if (row == 0 && col != 0) WRITE "  " + letters[col - 1];
-          if (row == 0 || col == 0) continue;
-
-          int buffer = -1;
-          int cellType = (state == IS_IN_GAME ? board : truthBoard)[(row + buffer) * boardSize + (col + buffer)];
-
-          if (cellType > IS_NUMBER) {
-            switch (cellType - IS_NUMBER) {
-            case 1:
-              WRITE NUM_1_COLOR;
-              break;
-            case 2:
-              WRITE NUM_2_COLOR;
-              break;
-            case 3:
-              WRITE NUM_3_COLOR;
-              break;
-            case 4:
-              WRITE NUM_4_COLOR;
-              break;
-            case 5:
-              WRITE NUM_5_COLOR;
-              break;
-            case 6:
-              WRITE NUM_6_COLOR;
-              break;
-            case 7:
-              WRITE NUM_7_COLOR;
-              break;
-            case 8:
-              WRITE NUM_8_COLOR;
-              break;
-            }
-            WRITE " " + to_string(cellType - IS_NUMBER) + RESET_FORMAT;
-            continue;
-          }
-          switch (cellType) {
-          case IS_DEFAULT:
-            WRITE DEFAULT_SPRITE;
-            break;
-          case IS_MARKED:
-            WRITE MARKED_SPRITE;
-            break;
-          case IS_EMPTY:
-            WRITE EMPTY_SPRITE;
-            break;
-          case IS_MINE:
-            WRITE MINE_SPRITE;
-            break;
-          default:
-            // This should never reach
-            WRITE DEFAULT_SPRITE;
-            break;
-          }
-        }
-        SPACE;
-      }
-
-      // #endregion
-    };
-
-    // #endregion
-
     while (state == IS_IN_SETUP || state == IS_IN_GAME) {
       // #region Board setup
       bool isSizePicked = false;
       bool isNOfMinesPicked = false;
-      int maxMines;
-      int cell;
+      int maxMines = 1;
+      int explodedMine = 0;
+      char currentAction = '0';
+
+
+      // #region Utils
+      /**
+     * LAMBDA EXPRESSIONS ARE STILL IN main()!
+     */
+
+      // Helper function to get neighbouring cells
+      function<void(int index, int neighbours[NUM_NEIGHBOURS])> getNeighbours = [&boardSize](int index, int neighbours[NUM_NEIGHBOURS]) {
+        // #region getNeighbours
+        bool isLeft = index % boardSize == 0;
+        bool isRight = index % boardSize == boardSize - 1;
+        bool isTop = index / boardSize == 0;
+        bool isBottom = int(index / boardSize) == boardSize - 1;
+
+        neighbours[NEIGHBOUR_TOP_LEFT] = (isTop || isLeft) ? -1 : index - boardSize - 1;
+        neighbours[NEIGHBOUR_TOP] = isTop ? -1 : index - boardSize;
+        neighbours[NEIGHBOUR_TOP_RIGHT] = (isTop || isRight) ? -1 : index - boardSize + 1;
+        neighbours[NEIGHBOUR_RIGHT] = isRight ? -1 : index + 1;
+        neighbours[NEIGHBOUR_BOTTOM_RIGHT] = (isBottom || isRight) ? -1 : index + boardSize + 1;
+        neighbours[NEIGHBOUR_BOTTOM] = isBottom ? -1 : index + boardSize;
+        neighbours[NEIGHBOUR_BOTTOM_LEFT] = (isBottom || isLeft) ? -1 : index + boardSize - 1;
+        neighbours[NEIGHBOUR_LEFT] = isLeft ? -1 : index - 1;
+        // #endregion
+      };
+
+      // Helper function to render the board
+      function<void()> renderBoard = [&persistentMessage, &boardSize, &board, &truthBoard, &letters, &state, &currentCell, &explodedMine]() {
+        // #region renderBoard
+        system("cls");
+
+        for (size_t row = 0; row < (boardSize + 1); row++) {
+          for (size_t col = 0; col < (boardSize + 1); col++) {
+            if (col == 0 && row == 0) WRITE "  ";
+            if (col == 0 && row != 0) WRITE(row < boardSize ? " " : "") + to_string(row) + " ";
+            if (row == 0 && col != 0) WRITE "  " + letters[col - 1];
+            if (row == 0 || col == 0) continue;
+
+            int buffer = -1;
+            int cell = (row + buffer) * boardSize + (col + buffer);
+
+            int cellType = ((state == IS_IN_GAME && !IS_DEBUGGING_BOARD) ? board : truthBoard)[cell];
+
+            if (cellType > IS_NUMBER) {
+              switch (cellType - IS_NUMBER) {
+              case 1:
+                WRITE NUM_1_COLOR;
+                break;
+              case 2:
+                WRITE NUM_2_COLOR;
+                break;
+              case 3:
+                WRITE NUM_3_COLOR;
+                break;
+              case 4:
+                WRITE NUM_4_COLOR;
+                break;
+              case 5:
+                WRITE NUM_5_COLOR;
+                break;
+              case 6:
+                WRITE NUM_6_COLOR;
+                break;
+              case 7:
+                WRITE NUM_7_COLOR;
+                break;
+              case 8:
+                WRITE NUM_8_COLOR;
+                break;
+              }
+              WRITE " " + to_string(cellType - IS_NUMBER) + " " + RESET_FORMAT;
+              continue;
+            }
+            switch (cellType) {
+            case IS_DEFAULT:
+              WRITE DEFAULT_SPRITE;
+              break;
+            case IS_MARKED:
+              WRITE MARKED_SPRITE;
+              break;
+            case IS_EMPTY:
+              WRITE EMPTY_SPRITE;
+              break;
+            case IS_MINE:
+              WRITE string() + ((explodedMine != 0 && currentCell == cell) ? MINE_EXPLODED_SPRITE : MINE_SPRITE);
+              break;
+            default:
+              // This should never reach
+              WRITE DEFAULT_SPRITE;
+              break;
+            }
+          }
+          SPACE;
+        }
+        WRITE persistentMessage ENDL;
+        persistentMessage = "";
+        // #endregion
+      };
+
+      //Helper function to get the user to pick a cell
+      function<char()> getInput = [&inputRegX, &persistentMessage, &boardSize, &currentCell]() {
+        // #region getInput
+        string input;
+        ASK;
+
+        char action = '0';
+
+        try {
+          // // AI for regex matching syntax in c++. Modified ofc
+          smatch match;
+          if (regex_match(input, match, inputRegX)) {
+            char colChar = toupper(match[1].str()[0]);
+            int rowNum = stoi(match[2].str());
+            if (match[3].matched) action = tolower(match[3].str()[0]);
+            else action = 's';
+
+            int col = colChar - 'A';
+            int row = rowNum - 1;
+
+            currentCell = row * boardSize + col;
+          }
+          // End of syntax copy
+        } catch (...) {
+          persistentMessage += string() +
+                               "\nInvalid input. Format is:\n"
+                               "- " +
+                               MAIN_COLOR + "[Column][Row] [Action]" + RESET_FORMAT +
+                               " To pick the cell and "
+                               "action.\n"
+                               "OR"
+                               "- " +
+                               MAIN_COLOR + "[Column][Row]" + RESET_FORMAT +
+                               " To pick the cell and "
+                               "show the cell\n";
+        }
+        return action;
+        // #endregion
+      };
+
+      // Helper function to recursivelly show cells
+      function<void(int neighbours[], int cellIndex)> showNeighbours = [&board, &truthBoard, &getNeighbours, &showNeighbours](int neighbours[], int cellIndex) {
+        if (board[cellIndex] != IS_DEFAULT) return;
+
+        board[cellIndex] = truthBoard[cellIndex];
+        if (truthBoard[cellIndex] != IS_EMPTY) return;
+
+        int nestedNeighbours[NUM_NEIGHBOURS];
+        getNeighbours(cellIndex, nestedNeighbours);
+        for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
+          showNeighbours(nestedNeighbours, nestedNeighbours[neighbourIndex]);
+        }
+      };
+      // #endregion
+
 
       while (state == IS_IN_SETUP) {
         // #region Render
@@ -328,16 +394,16 @@ int main() {
 
         // #region Asking
         if (isSizePicked && isNOfMinesPicked) WRITE "Are you ready? " + ITALIC + "(y/n)" + RESET_FORMAT ENDL;
-        string result;
+        string input;
 
 
         if (!isSizePicked) {
 
-          if (!SKIP_QUESTIONS) ASK result;
-          else result = "10";
+          if (!SKIP_QUESTIONS) ASK;
+          else input = "10";
 
           try {
-            boardSize = stoi(result);
+            boardSize = stoi(input);
           } catch (...) {
             didIncorrectInput = true;
             persistentMessage += "Invalid input, please type a number";
@@ -364,11 +430,11 @@ int main() {
 
         if (!isNOfMinesPicked) {
 
-          if (!SKIP_QUESTIONS) ASK result;
-          else result = "18";
+          if (!SKIP_QUESTIONS) ASK;
+          else input = "18";
 
           try {
-            nOfMines = stoi(result);
+            nOfMines = stoi(input);
           } catch (...) {
             didIncorrectInput = true;
             persistentMessage += "Invalid input, please type a number";
@@ -385,12 +451,12 @@ int main() {
         }
 
 
-        if (!SKIP_QUESTIONS) ASK result;
-        else result = "y";
+        if (!SKIP_QUESTIONS) ASK;
+        else input = "y";
 
         char resultChar;
         try {
-          resultChar = tolower(result[0]);
+          resultChar = tolower(input[0]);
         } catch (...) {
           didIncorrectInput = true;
           persistentMessage += "Invalid input, please type a y or n";
@@ -413,19 +479,29 @@ int main() {
         persistentMessage += "Unknown response, please type \"y\" or \"n\"";
         // #endregion
       }
+      state = IS_IN_GAME;
 
-      renderBoard();
+      maxChar = string() + letters[boardSize - 1];
+      inputRegX =
+          regex((boardSize >= 10 ? "^\\s*([A-" + maxChar + "])\\s*(10|[1-9])\\s*([ms])?\\s*$" : "^\\s*([A-" + maxChar + "])\\s*([1-" + to_string(boardSize) + "])\\s*([ms])?\\s*$"),
+                regex_constants::icase);
+
+
+      do {
+        renderBoard();
+        currentAction = getInput();
+
+        if (currentAction != 's') {
+          persistentMessage += "\n Please open an initial cell";
+        }
+      } while (currentAction != 's');
       system("pause");
-      // TODO: get cell util
-      // TODO: Get initial cell
-
       // #region Board generation
       for (size_t i = 0; i < nOfMines; i++) {
         int mineIndex;
-        bool isValidPosition = false;
-
-        while (!isValidPosition) {
-          isValidPosition = true; // Expect a vlaid position
+        bool isTooClose = false;
+        do {
+          isTooClose = false; // Expect a vlaid position
 
           int row = rand() % boardSize;
           int col = rand() % boardSize;
@@ -437,11 +513,11 @@ int main() {
            * They avoid the computation, even if small, from `getNeighbours` if the valid condition already fails.
            */
 
-          isValidPosition = mineIndex != cell;
-          if (!isValidPosition) continue;
+          // isTooClose = mineIndex == currentCell;
+          // if (isTooClose) continue;
 
-          isValidPosition = truthBoard[mineIndex] != IS_MINE;
-          if (!isValidPosition) continue;
+          // isTooClose = truthBoard[mineIndex] == IS_MINE;
+          // if (isTooClose) continue;
 
 
           int mineNeighbours[NUM_NEIGHBOURS];
@@ -450,11 +526,110 @@ int main() {
           for (size_t i = 0; i < NUM_NEIGHBOURS; i++) {
             int neighbourIndex = mineNeighbours[i];
             if (neighbourIndex == -1) continue; // Ignore neighbours that are out of bounds
-            if (neighbourIndex == mineIndex) isValidPosition = false;
+            if (neighbourIndex == mineIndex) isTooClose = true;
           }
+        } while (mineIndex == currentCell || truthBoard[mineIndex] == IS_MINE || isTooClose);
+
+        truthBoard[mineIndex] = IS_MINE;
+      }
+
+      for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
+        if (truthBoard[cellIndex] == IS_MINE) continue;
+
+        int neighbours[NUM_NEIGHBOURS];
+        getNeighbours(cellIndex, neighbours);
+
+        int neighbouringBombs = 0;
+
+        for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
+          if (neighbours[neighbourIndex] == -1) continue; // Ingore neighbours outside bounds
+          if (truthBoard[neighbours[neighbourIndex]] == IS_MINE) neighbouringBombs++;
         }
+        if (neighbouringBombs == 0) truthBoard[cellIndex] = IS_EMPTY;
+        else truthBoard[cellIndex] = IS_NUMBER + neighbouringBombs; // Attach number directly to the cell type
       }
       // #endregion
+
+      int neighbours[NUM_NEIGHBOURS];
+      getNeighbours(currentCell, neighbours);
+      showNeighbours(neighbours, currentCell);
+
+      // #endregion
+
+      // #region In game
+      bool hasWon = false;
+      while (state == IS_IN_GAME) {
+        currentAction = '0';
+        renderBoard();
+        currentAction = getInput();
+
+
+        if (currentAction == 'm') {
+          board[currentCell] = IS_MARKED;
+        }
+        if (currentAction != 's') continue;
+
+        if (truthBoard[currentCell] == IS_MINE) {
+          state = IS_IN_END_SCREEN;
+          hasWon = false;
+          explodedMine = currentCell;
+          break;
+        }
+
+        if (board[currentCell] == IS_DEFAULT || board[currentCell] == IS_MARKED) {
+          int neighbours[NUM_NEIGHBOURS];
+          getNeighbours(currentCell, neighbours);
+          showNeighbours(neighbours, currentCell);
+        }
+
+        for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
+          if (truthBoard[cellIndex] == IS_MINE) continue;
+          if (board[cellIndex] == IS_DEFAULT) break;
+          if (board[cellIndex] == IS_MARKED) break;
+
+          state = IS_IN_END_SCREEN;
+          hasWon = true;
+        }
+      }
+
+      renderBoard();
+      SPACE;
+      SEPARATOR;
+      SPACE;
+      WRITE "             " + (hasWon ? (string() + MAIN_COLOR + "YOU WON!") : (string() + LOST_COLOR + "GAME OVER!")) + RESET_FORMAT ENDL;
+      if (!hasWon) WRITE "              " + ITALIC + "Get good" + RESET_FORMAT ENDL;
+      SPACE;
+      SEPARATOR;
+      SPACE;
+
+      while (true) {
+        WRITE "Fancy another game? " + ITALIC + "(y/n)" + RESET_FORMAT ENDL;
+        string input;
+        ASK;
+        char resultChar;
+        try {
+          resultChar = tolower(input[0]);
+        } catch (...) {
+          didIncorrectInput = true;
+          persistentMessage += "Invalid input, please type a y or n";
+        }
+
+        if (resultChar == 'n') {
+          //Resets this loop and asks again
+          isSizePicked = false;
+          isNOfMinesPicked = false;
+          didIncorrectInput = false;
+          continue;
+        }
+
+        if (resultChar == 'y') {
+          didIncorrectInput = false;
+          break;
+        }
+
+        didIncorrectInput = true;
+        persistentMessage += "Unknown response, please type \"y\" or \"n\"";
+      }
       // #endregion
     }
     // #endregion
