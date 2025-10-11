@@ -135,7 +135,7 @@ using namespace std;
         WRITE(EMPTY_SPRITE);                                                                                                                                                       \
         break;                                                                                                                                                                     \
       case IS_MINE:                                                                                                                                                                \
-        WRITE((explodedMine != 0 && currentCell == cell) ? MINE_EXPLODED_SPRITE : MINE_SPRITE);                                                                                    \
+        WRITE(((explodedMine != 0 && currentCell == cell) ? MINE_EXPLODED_SPRITE : MINE_SPRITE));                                                                                  \
         break;                                                                                                                                                                     \
       default:                                                                                                                                                                     \
         /* This should never reach */                                                                                                                                              \
@@ -145,7 +145,7 @@ using namespace std;
     }                                                                                                                                                                              \
     SPACE;                                                                                                                                                                         \
   }                                                                                                                                                                                \
-  WRITLN(persistentMessage);                                                                                                                                                       \
+  WRITELN(persistentMessage);                                                                                                                                                      \
   persistentMessage = "";
 // #endregion
 
@@ -229,25 +229,25 @@ int main() {
       // #region Render
       CLEAR_TERMINAL;
 
-      TITLE
+      // TITLE
 
-      WRITE MAIN_COLOR + "HOW TO PLAY:" + RESET_FORMAT ENDL;
-      WRITE "  Type " + MAIN_COLOR + "[Column][Row][Action]" + RESET_FORMAT + " To pick a cell and perform the desired action.";
-      WRITE ITALIC + " (Spacing does not matter)" + RESET_FORMAT ENDL;
-      SPACE;
-      WRITE "  Available actions:" ENDL;
-      WRITE "  - " + MAIN_COLOR + "s" + RESET_FORMAT + " to show the cell. " + ITALIC + "(Default, if no action is typed it will execute this)" + RESET_FORMAT ENDL;
-      WRITE "  - " + MAIN_COLOR + "m" + RESET_FORMAT + " to mark the cell as a potential mine." ENDL;
-      SPACE;
-      WRITE "  Examples:" ENDL;
-      WRITE "  - " + MAIN_COLOR + "A1" + RESET_FORMAT + " To show cell at column A and row 1." ENDL;
-      WRITE "  - " + MAIN_COLOR + "E7 m" + RESET_FORMAT + " To mark the cell at column E and row 7 as a potential mine." ENDL;
+      // WRITE MAIN_COLOR + "HOW TO PLAY:" + RESET_FORMAT ENDL;
+      // WRITE "  Type " + MAIN_COLOR + "[Column][Row][Action]" + RESET_FORMAT + " To pick a cell and perform the desired action.";
+      // WRITE ITALIC + " (Spacing does not matter)" + RESET_FORMAT ENDL;
+      // SPACE;
+      // WRITE "  Available actions:" ENDL;
+      // WRITE "  - " + MAIN_COLOR + "s" + RESET_FORMAT + " to show the cell. " + ITALIC + "(Default, if no action is typed it will execute this)" + RESET_FORMAT ENDL;
+      // WRITE "  - " + MAIN_COLOR + "m" + RESET_FORMAT + " to mark the cell as a potential mine." ENDL;
+      // SPACE;
+      // WRITE "  Examples:" ENDL;
+      // WRITE "  - " + MAIN_COLOR + "A1" + RESET_FORMAT + " To show cell at column A and row 1." ENDL;
+      // WRITE "  - " + MAIN_COLOR + "E7 m" + RESET_FORMAT + " To mark the cell at column E and row 7 as a potential mine." ENDL;
       SPACE;
       SPACE;
       SEPARATOR;
       if (didIncorrectInput) {
         SPACE;
-        WRITE persistentMessage ENDL;
+        // WRITE persistentMessage ENDL;
 
         persistentMessage = "";
       }
@@ -313,339 +313,333 @@ int main() {
       int neighbours[NUM_NEIGHBOURS];
 
 
-      // #region getNeighbours
 
-      // #endregion
-    };
+      //Helper function to get the user to pick a cell
+      // function<char()> getInput = [&inputRegX, &persistentMessage, &boardSize, &currentCell]() {
+      //   // #region getInput
+      //   string input;
+      //   ASK(input);
 
+      //   char action = '0';
 
+      //   try {
+      //     // // AI for regex matching syntax in c++. Modified ofc
+      //     smatch match;
+      //     if (regex_match(input, match, inputRegX)) {
+      //       char colChar = toupper(match[1].str()[0]);
+      //       int rowNum = stoi(match[2].str());
+      //       if (match[3].matched) action = tolower(match[3].str()[0]);
+      //       else action = 's';
 
-    //Helper function to get the user to pick a cell
-    function<char()> getInput = [&inputRegX, &persistentMessage, &boardSize, &currentCell]() {
-      // #region getInput
-      string input;
-      ASK(input);
+      //       int col = colChar - 'A';
+      //       int row = rowNum - 1;
 
-      char action = '0';
+      //       currentCell = row * boardSize + col;
+      //     }
+      //     // End of syntax copy
+      //   } catch (...) {
+      //     persistentMessage += string() +
+      //                          "\nInvalid input. Format is:\n"
+      //                          "- " +
+      //                          MAIN_COLOR + "[Column][Row] [Action]" + RESET_FORMAT +
+      //                          " To pick the cell and "
+      //                          "action.\n"
+      //                          "OR"
+      //                          "- " +
+      //                          MAIN_COLOR + "[Column][Row]" + RESET_FORMAT +
+      //                          " To pick the cell and "
+      //                          "show the cell\n";
+      //   }
+      //   return action;
+      //   // #endregion
+      // };
 
-      try {
-        // // AI for regex matching syntax in c++. Modified ofc
-        smatch match;
-        if (regex_match(input, match, inputRegX)) {
-          char colChar = toupper(match[1].str()[0]);
-          int rowNum = stoi(match[2].str());
-          if (match[3].matched) action = tolower(match[3].str()[0]);
-          else action = 's';
+      // Helper function to recursivelly show cells
+      // function<void(int neighbours[], int cellIndex)> showNeighbours = [&board, &truthBoard, &showNeighbours](int neighbours[], int cellIndex) {
+      //   if (board[cellIndex] != IS_DEFAULT) return;
 
-          int col = colChar - 'A';
-          int row = rowNum - 1;
+      //   board[cellIndex] = truthBoard[cellIndex];
+      //   if (truthBoard[cellIndex] != IS_EMPTY) return;
 
-          currentCell = row * boardSize + col;
-        }
-        // End of syntax copy
-      } catch (...) {
-        persistentMessage += string() +
-                             "\nInvalid input. Format is:\n"
-                             "- " +
-                             MAIN_COLOR + "[Column][Row] [Action]" + RESET_FORMAT +
-                             " To pick the cell and "
-                             "action.\n"
-                             "OR"
-                             "- " +
-                             MAIN_COLOR + "[Column][Row]" + RESET_FORMAT +
-                             " To pick the cell and "
-                             "show the cell\n";
-      }
-      return action;
-      // #endregion
-    };
-
-    // Helper function to recursivelly show cells
-    function<void(int neighbours[], int cellIndex)> showNeighbours = [&board, &truthBoard, &showNeighbours](int neighbours[], int cellIndex) {
-      if (board[cellIndex] != IS_DEFAULT) return;
-
-      board[cellIndex] = truthBoard[cellIndex];
-      if (truthBoard[cellIndex] != IS_EMPTY) return;
-
-      int nestedNeighbours[NUM_NEIGHBOURS];
-      getNeighbours(cellIndex, nestedNeighbours);
-      for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
-        showNeighbours(nestedNeighbours, nestedNeighbours[neighbourIndex]);
-      }
-    };
-    // #endregion
-
-    while (state == IS_IN_SETUP) {
-      // #region Render
-      CLEAR_TERMINAL;
-
-      TITLE
-
-      WRITE MAIN_COLOR + "BOARD SETUP:" + RESET_FORMAT ENDL;
-      if (!isSizePicked) WRITE "  Input a board size " + ITALIC + "(" + to_string(MIN_BOARD_SIZE) + "-" + to_string(MAX_BOARD_SIZE) + ")" + RESET_FORMAT ENDL;
-      else WRITE "  Board size -> " + MAIN_COLOR + to_string(boardSize) + "x" + to_string(boardSize) + RESET_FORMAT ENDL;
-
-      if (isSizePicked) {
-        if (!isNOfMinesPicked) {
-          WRITE "  Input the number of mines " + ITALIC + "(" + to_string(MIN_MINES) + "-" + to_string(maxMines) + ")" + RESET_FORMAT ENDL;
-          WRITE ITALIC + "  Recommended mines: " + to_string(int(maxMines * RECOMENDED_MINE_DENSITY)) + RESET_FORMAT ENDL;
-        } else {
-          WRITE "  Number of MINES -> " + MAIN_COLOR + to_string(nOfMines) + RESET_FORMAT ENDL;
-        }
-      }
-      SPACE;
-      SPACE;
-      SEPARATOR;
-      if (didIncorrectInput) {
-        SPACE;
-        WRITE persistentMessage ENDL;
-
-        persistentMessage = "";
-      }
-      SPACE;
+      //   int nestedNeighbours[NUM_NEIGHBOURS];
+      //   getNeighbours(cellIndex, nestedNeighbours);
+      //   for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
+      //     showNeighbours(nestedNeighbours, nestedNeighbours[neighbourIndex]);
+      //   }
+      // };
       // #endregion
 
-      // #region Asking
-      if (isSizePicked && isNOfMinesPicked) WRITELN("Are you ready? " + ITALIC + "(y/n)" + RESET_FORMAT);
-      string input;
+      while (state == IS_IN_SETUP) {
+        // #region Render
+        // CLEAR_TERMINAL;
+
+        // TITLE
+
+        // WRITE MAIN_COLOR + "BOARD SETUP:" + RESET_FORMAT ENDL;
+        // if (!isSizePicked) WRITE "  Input a board size " + ITALIC + "(" + to_string(MIN_BOARD_SIZE) + "-" + to_string(MAX_BOARD_SIZE) + ")" + RESET_FORMAT ENDL;
+        // else WRITE "  Board size -> " + MAIN_COLOR + to_string(boardSize) + "x" + to_string(boardSize) + RESET_FORMAT ENDL;
+
+        // if (isSizePicked) {
+        //   if (!isNOfMinesPicked) {
+        //     WRITE "  Input the number of mines " + ITALIC + "(" + to_string(MIN_MINES) + "-" + to_string(maxMines) + ")" + RESET_FORMAT ENDL;
+        //     WRITE ITALIC + "  Recommended mines: " + to_string(int(maxMines * RECOMENDED_MINE_DENSITY)) + RESET_FORMAT ENDL;
+        //   } else {
+        //     WRITE "  Number of MINES -> " + MAIN_COLOR + to_string(nOfMines) + RESET_FORMAT ENDL;
+        //   }
+        // }
+        // SPACE;
+        // SPACE;
+        // SEPARATOR;
+        // if (didIncorrectInput) {
+        //   SPACE;
+        //   WRITE persistentMessage ENDL;
+
+        //   persistentMessage = "";
+        // }
+        // SPACE;
+        // #endregion
+
+        // #region Asking
+        if (isSizePicked && isNOfMinesPicked) WRITELN("Are you ready? " + ITALIC + "(y/n)" + RESET_FORMAT);
+        string input;
 
 
-      if (!isSizePicked) {
+        if (!isSizePicked) {
 
-        if (!SKIP_QUESTIONS) ASK(input);
-        else input = "10";
+          if (!SKIP_QUESTIONS) ASK(input);
+          else input = "10";
 
-        try {
-          boardSize = stoi(input);
-        } catch (...) {
-          didIncorrectInput = true;
-          persistentMessage += "Invalid input, please type a number";
-          continue;
-        }
+          try {
+            boardSize = stoi(input);
+          } catch (...) {
+            didIncorrectInput = true;
+            persistentMessage += "Invalid input, please type a number";
+            continue;
+          }
 
-        if (boardSize < MIN_BOARD_SIZE || boardSize > MAX_BOARD_SIZE) {
-          didIncorrectInput = true;
-          persistentMessage += "Invalid size, please type a number between " + to_string(MIN_BOARD_SIZE) + " and " + to_string(MAX_BOARD_SIZE);
-          continue;
-        }
-        /**
+          if (boardSize < MIN_BOARD_SIZE || boardSize > MAX_BOARD_SIZE) {
+            didIncorrectInput = true;
+            persistentMessage += "Invalid size, please type a number between " + to_string(MIN_BOARD_SIZE) + " and " + to_string(MAX_BOARD_SIZE);
+            continue;
+          }
+          /**
          * Max mines is calculated by taking the amounf of cells in the picked board and removing:
          * - (8) The number of possible neighbours of the initial cell, since we want the initial cell to be clear
          * - (1) The actual initial shown cell
          * - (1) To have space for a free space somewhere else on the map, since if not, the game would instantly end uppon opening the first cell
          */
-        maxMines = boardSize * boardSize - NUM_NEIGHBOURS - 2;
+          maxMines = boardSize * boardSize - NUM_NEIGHBOURS - 2;
 
-        didIncorrectInput = false;
-        isSizePicked = true;
-        continue;
-      }
+          didIncorrectInput = false;
+          isSizePicked = true;
+          continue;
+        }
 
-      if (!isNOfMinesPicked) {
+        if (!isNOfMinesPicked) {
+
+          if (!SKIP_QUESTIONS) ASK(input);
+          else input = "18";
+
+          try {
+            nOfMines = stoi(input);
+          } catch (...) {
+            didIncorrectInput = true;
+            persistentMessage += "Invalid input, please type a number";
+            continue;
+          }
+          if (nOfMines < MIN_MINES || nOfMines > maxMines) {
+            didIncorrectInput = true;
+            persistentMessage += "Invalid number of mines, please type a number between " + to_string(MIN_BOARD_SIZE) + " and " + to_string(maxMines);
+            continue;
+          }
+          didIncorrectInput = false;
+          isNOfMinesPicked = true;
+          continue;
+        }
+
 
         if (!SKIP_QUESTIONS) ASK(input);
-        else input = "18";
+        else input = "y";
 
+        char resultChar;
         try {
-          nOfMines = stoi(input);
+          resultChar = tolower(input[0]);
         } catch (...) {
           didIncorrectInput = true;
-          persistentMessage += "Invalid input, please type a number";
+          persistentMessage += "Invalid input, please type a y or n";
+        }
+
+        if (resultChar == 'n') {
+          //Resets this loop and asks again
+          isSizePicked = false;
+          isNOfMinesPicked = false;
+          didIncorrectInput = false;
           continue;
         }
-        if (nOfMines < MIN_MINES || nOfMines > maxMines) {
-          didIncorrectInput = true;
-          persistentMessage += "Invalid number of mines, please type a number between " + to_string(MIN_BOARD_SIZE) + " and " + to_string(maxMines);
-          continue;
+
+        if (resultChar == 'y') {
+          didIncorrectInput = false;
+          break;
         }
-        didIncorrectInput = false;
-        isNOfMinesPicked = true;
-        continue;
-      }
 
-
-      if (!SKIP_QUESTIONS) ASK(input);
-      else input = "y";
-
-      char resultChar;
-      try {
-        resultChar = tolower(input[0]);
-      } catch (...) {
         didIncorrectInput = true;
-        persistentMessage += "Invalid input, please type a y or n";
+        persistentMessage += "Unknown response, please type \"y\" or \"n\"";
+        // #endregion
       }
+      state = IS_IN_GAME;
 
-      if (resultChar == 'n') {
-        //Resets this loop and asks again
-        isSizePicked = false;
-        isNOfMinesPicked = false;
-        didIncorrectInput = false;
-        continue;
-      }
-
-      if (resultChar == 'y') {
-        didIncorrectInput = false;
-        break;
-      }
-
-      didIncorrectInput = true;
-      persistentMessage += "Unknown response, please type \"y\" or \"n\"";
-      // #endregion
-    }
-    state = IS_IN_GAME;
-
-    maxChar = string() + letters[boardSize - 1];
-    inputRegX =
-        regex((boardSize >= 10 ? "^\\s*([A-" + maxChar + "])\\s*(10|[1-9])\\s*([ms])?\\s*$" : "^\\s*([A-" + maxChar + "])\\s*([1-" + to_string(boardSize) + "])\\s*([ms])?\\s*$"),
-              regex_constants::icase);
+      maxChar = string() + letters[boardSize - 1];
+      inputRegX =
+          regex((boardSize >= 10 ? "^\\s*([A-" + maxChar + "])\\s*(10|[1-9])\\s*([ms])?\\s*$" : "^\\s*([A-" + maxChar + "])\\s*([1-" + to_string(boardSize) + "])\\s*([ms])?\\s*$"),
+                regex_constants::icase);
 
 
-    do {
-      RENDER_BOARD;
-
-      currentAction = getInput();
-
-      if (currentAction != 's') {
-        persistentMessage += "\n Please open an initial cell";
-      }
-    } while (currentAction != 's');
-    // #region Board generation
-    for (size_t i = 0; i < nOfMines; i++) {
-      int mineIndex;
-      bool isTooClose = false;
       do {
-        isTooClose = false; // Expect a vlaid position
 
-        int row = rand() % boardSize;
-        int col = rand() % boardSize;
 
-        mineIndex = row * boardSize + col; // Flattened 2D array syntax
+        // currentAction = getInput();
 
-        /**
+        if (currentAction != 's') {
+          persistentMessage += "\n Please open an initial cell";
+        }
+      } while (currentAction != 's');
+      // #region Board generation
+      for (size_t i = 0; i < nOfMines; i++) {
+        int mineIndex;
+        bool isTooClose = false;
+        do {
+          isTooClose = false; // Expect a vlaid position
+
+          int row = rand() % boardSize;
+          int col = rand() % boardSize;
+
+          mineIndex = row * boardSize + col; // Flattened 2D array syntax
+
+          /**
            * These early simple checks "break" early.
            * They avoid the computation, even if small, from `getNeighbours` if the valid condition already fails.
            */
 
-        isTooClose = mineIndex == currentCell;
-        if (isTooClose) continue;
+          isTooClose = mineIndex == currentCell;
+          if (isTooClose) continue;
 
-        isTooClose = truthBoard[mineIndex] == IS_MINE;
-        if (isTooClose) continue;
-
-
-        int mineNeighbours[NUM_NEIGHBOURS];
-        getNeighbours(mineIndex, mineNeighbours);
-
-        for (size_t neighbour = 0; neighbour < NUM_NEIGHBOURS; neighbour++) {
-          int neighbourIndex = mineNeighbours[neighbour];
-          if (neighbourIndex == -1) continue; // Ignore neighbours that are out of bounds
-          if (neighbourIndex == currentCell) isTooClose = true;
-        }
-      } while (mineIndex == currentCell || truthBoard[mineIndex] == IS_MINE || isTooClose);
-
-      truthBoard[mineIndex] = IS_MINE;
-    }
-
-    for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
-      if (truthBoard[cellIndex] == IS_MINE) continue;
-
-      int neighbours[NUM_NEIGHBOURS];
-      getNeighbours(cellIndex, neighbours);
-
-      int neighbouringBombs = 0;
-
-      for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
-        if (neighbours[neighbourIndex] == -1) continue; // Ingore neighbours outside bounds
-        if (truthBoard[neighbours[neighbourIndex]] == IS_MINE) neighbouringBombs++;
-      }
-      if (neighbouringBombs == 0) truthBoard[cellIndex] = IS_EMPTY;
-      else truthBoard[cellIndex] = IS_NUMBER + neighbouringBombs; // Attach number directly to the cell type
-    }
-    // #endregion
-
-    int neighbours[NUM_NEIGHBOURS];
-    getNeighbours(currentCell, neighbours);
-    showNeighbours(neighbours, currentCell);
-
-    // #endregion
-
-    // #region In game
-    bool hasWon = false;
-    while (state == IS_IN_GAME) {
-      currentAction = '0';
-      renderBoard();
-      currentAction = getInput();
+          isTooClose = truthBoard[mineIndex] == IS_MINE;
+          if (isTooClose) continue;
 
 
-      if (currentAction == 'm') {
-        board[currentCell] = IS_MARKED;
-      }
-      if (currentAction != 's') continue;
+          int mineNeighbours[NUM_NEIGHBOURS];
+          // getNeighbours(mineIndex, mineNeighbours);
 
-      if (truthBoard[currentCell] == IS_MINE) {
-        state = IS_IN_END_SCREEN;
-        hasWon = false;
-        explodedMine = currentCell;
-        break;
-      }
+          for (size_t neighbour = 0; neighbour < NUM_NEIGHBOURS; neighbour++) {
+            int neighbourIndex = mineNeighbours[neighbour];
+            if (neighbourIndex == -1) continue; // Ignore neighbours that are out of bounds
+            if (neighbourIndex == currentCell) isTooClose = true;
+          }
+        } while (mineIndex == currentCell || truthBoard[mineIndex] == IS_MINE || isTooClose);
 
-      if (board[currentCell] == IS_DEFAULT || board[currentCell] == IS_MARKED) {
-        int neighbours[NUM_NEIGHBOURS];
-        getNeighbours(currentCell, neighbours);
-        showNeighbours(neighbours, currentCell);
+        truthBoard[mineIndex] = IS_MINE;
       }
 
       for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
         if (truthBoard[cellIndex] == IS_MINE) continue;
-        if (board[cellIndex] == IS_DEFAULT) break;
-        if (board[cellIndex] == IS_MARKED) break;
 
-        state = IS_IN_END_SCREEN;
-        hasWon = true;
+        int neighbours[NUM_NEIGHBOURS];
+        // getNeighbours(cellIndex, neighbours);
+
+        int neighbouringBombs = 0;
+
+        for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
+          if (neighbours[neighbourIndex] == -1) continue; // Ingore neighbours outside bounds
+          if (truthBoard[neighbours[neighbourIndex]] == IS_MINE) neighbouringBombs++;
+        }
+        if (neighbouringBombs == 0) truthBoard[cellIndex] = IS_EMPTY;
+        else truthBoard[cellIndex] = IS_NUMBER + neighbouringBombs; // Attach number directly to the cell type
       }
-    }
+      // #endregion
 
-    renderBoard();
-    SPACE;
-    SEPARATOR;
-    SPACE;
-    WRITE "             " + (hasWon ? (string() + MAIN_COLOR + "YOU WON!") : (string() + LOST_COLOR + "GAME OVER!")) + RESET_FORMAT ENDL;
-    if (!hasWon) WRITE "              " + ITALIC + "Get good" + RESET_FORMAT ENDL;
-    SPACE;
-    SEPARATOR;
-    SPACE;
+      int neighbours[NUM_NEIGHBOURS];
+      // getNeighbours(currentCell, neighbours);
+      // showNeighbours(neighbours, currentCell);
 
-    while (state == IS_IN_END_SCREEN) {
-      WRITE "Fancy another game? " + ITALIC + "(y/n)" + RESET_FORMAT ENDL;
-      string input;
-      ASK(input);
-      char resultChar;
-      try {
-        resultChar = tolower(input[0]);
-      } catch (...) {
+      // #endregion
+
+      // #region In game
+      bool hasWon = false;
+      while (state == IS_IN_GAME) {
+        currentAction = '0';
+        RENDER_BOARD;
+        // currentAction = getInput();
+
+
+        if (currentAction == 'm') {
+          board[currentCell] = IS_MARKED;
+        }
+        if (currentAction != 's') continue;
+
+        if (truthBoard[currentCell] == IS_MINE) {
+          state = IS_IN_END_SCREEN;
+          hasWon = false;
+          explodedMine = currentCell;
+          break;
+        }
+
+        if (board[currentCell] == IS_DEFAULT || board[currentCell] == IS_MARKED) {
+          int neighbours[NUM_NEIGHBOURS];
+          // getNeighbours(currentCell, neighbours);
+          // showNeighbours(neighbours, currentCell);
+        }
+
+        for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
+          if (truthBoard[cellIndex] == IS_MINE) continue;
+          if (board[cellIndex] == IS_DEFAULT) break;
+          if (board[cellIndex] == IS_MARKED) break;
+
+          state = IS_IN_END_SCREEN;
+          hasWon = true;
+        }
+      }
+
+      RENDER_BOARD;
+      SPACE;
+      SEPARATOR;
+      SPACE;
+      WRITELN("             " + (hasWon ? (string() + MAIN_COLOR + "YOU WON!") : (string() + LOST_COLOR + "GAME OVER!")) + RESET_FORMAT);
+      if (!hasWon) WRITELN("              " + ITALIC + "Get good" + RESET_FORMAT);
+      SPACE;
+      SEPARATOR;
+      SPACE;
+
+      while (state == IS_IN_END_SCREEN) {
+        WRITELN("Fancy another game? " + ITALIC + "(y/n)" + RESET_FORMAT);
+        string input;
+        ASK(input);
+        char resultChar;
+        try {
+          resultChar = tolower(input[0]);
+        } catch (...) {
+          didIncorrectInput = true;
+          persistentMessage += "Invalid input, please type a y or n";
+        }
+
+        if (resultChar == 'n') {
+          WRITELN("Goodbye then!");
+          system("pause");
+          return 0;
+        }
+
+        if (resultChar == 'y') {
+          state = IS_IN_SETUP;
+          didIncorrectInput = false;
+          break;
+        }
+
         didIncorrectInput = true;
-        persistentMessage += "Invalid input, please type a y or n";
+        persistentMessage += "Unknown response, please type \"y\" or \"n\"";
       }
 
-      if (resultChar == 'n') {
-        WRITE "Goodbye then!" ENDL;
-        system("pause");
-        return 0;
-      }
-
-      if (resultChar == 'y') {
-        state = IS_IN_SETUP;
-        didIncorrectInput = false;
-        break;
-      }
-
-      didIncorrectInput = true;
-      persistentMessage += "Unknown response, please type \"y\" or \"n\"";
+      // #endregion
     }
-
     // #endregion
   }
   // #endregion
-}
-// #endregion
 }
