@@ -3,8 +3,36 @@
 Welcome to the minesweeper repo.<br>
 This is an exercise for M03 of CFGS DAM-VIOD at Enti.
 
+## Running the app
+
+I recommend the use of the pre-made launch.bat script, which launches the minesweeper in a conhost owned console instead of windows terminal. Usually this means worse display, but I think it's more legible in that console.
+
 ## Compiling
-I use VsCode and so it does not come with the compiler by default. In order to use the cl.exe compiler we need to inject some enviroment variables into vsCode. Check out the setupEnv.bat script and replace the file path of `vcvarsall.bat`. Check out my path to have a reference on where to find it.
+
+You should be able to open a `developer command prompt`, navigate to this folder and execute:
+
+```
+build_nonode.bat
+```
+
+<br>
+If that fails, you will have to set up the cl compiler manually.
+
+In order to use the cl.exe compiler we need to inject some enviroment variables into the terminal process. Open the `setupEnv.bat` script and replace the file path of `vcvarsall.bat` with the one correct for your computer. Check out my path to have a reference on where to find it.
+
+If you have node installed, you can use the following command:
+
+```
+setupEnv.bat && build.bat
+```
+
+else you will need to run:
+
+```
+  setupEnv.bat && build_nonode.bat
+```
+
+The main diferences is that I have some js code in charge of optimizing the compilation by computing and storing some cache data. It makes it so only changed files get re-compiled, however since this is a 1-file program it does not really add anything.
 
 ## Nuances
 

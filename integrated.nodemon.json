@@ -1,5 +1,5 @@
 {
   "watch": ["*.cpp", "*.h"],
   "ext": "cpp,h",
-  "exec": "build.bat && call build\\app.exe"
+  "exec": "build.bat && call build\\minesweeper.exe"
 }

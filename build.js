@@ -75,7 +75,7 @@ if (filesToCompile.length != 0) {
   );
 
   execSync(
-    `link.exe /OUT:"build/app.exe" /DEBUG /PDB:"build/app.pdb" build/objects/*.obj`,
+    `link.exe /OUT:"build/minesweeper.exe" /DEBUG /PDB:"build/app.pdb" build/objects/*.obj`,
     {
       stdio: "inherit",
       shell: true,

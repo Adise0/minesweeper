@@ -6,7 +6,7 @@ if (Test-Path $pidFile) {
 }
 
 # launch in a *separate* window and save PID
-$p = Start-Process -FilePath "$PSScriptRoot/build/app.exe" `
+$p = Start-Process -FilePath "$PSScriptRoot/build/minesweeper.exe" `
                    -WorkingDirectory "$PSScriptRoot/" `
                    -Wait `
                    -WindowStyle Minimized `
