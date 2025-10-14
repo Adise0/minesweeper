@@ -6,10 +6,6 @@
 
 using namespace std;
 
-/*
-* TODO: 
-* functionless
-*/
 
 /**
  * Welcome to minesweeper.
@@ -17,12 +13,14 @@ using namespace std;
  */
 
 // #region Source of truth
+// #region Constants
 #define MAX_BOARD_SIZE 10
 #define MIN_BOARD_SIZE 4
 #define MIN_MINES 1
 #define RECOMENDED_MINE_DENSITY 0.2
-#define SKIP_QUESTIONS false
+#define SKIP_QUESTIONS true
 #define IS_DEBUGGING_BOARD false
+// #endregion
 
 // #region ANSI CODES
 #define ITALIC "\033[3m"
@@ -53,12 +51,52 @@ using namespace std;
 #define TITLE                                                                                                                                                                      \
   SEPARATOR;                                                                                                                                                                       \
   SPACE;                                                                                                                                                                           \
-  WRITE "             " + MAIN_COLOR + " MINESWEEPER" + RESET_FORMAT ENDL;                                                                                                         \
-  WRITE "              " + ITALIC + "By: Adise" + RESET_FORMAT ENDL;                                                                                                               \
+  WRITELN("             " + MAIN_COLOR + " MINESWEEPER");                                                                                                                          \
+  WRITELN("              " + ITALIC + "By: Adise");                                                                                                                                \
   SPACE;                                                                                                                                                                           \
   SEPARATOR;                                                                                                                                                                       \
   SPACE;
 // #endregion
+
+// #region Render sprites
+#define DEFAULT_SPRITE "⬛ "
+#define EMPTY_SPRITE "⬜ "
+#define MARKED_SPRITE "🚩 "
+#define MINE_SPRITE "💣 "
+#define MINE_EXPLODED_SPRITE "💥 "
+// #endregion
+
+// #region Truth tables
+// #region Cell types
+#define IS_DEFAULT 0
+#define IS_MARKED 1
+#define IS_EMPTY 2
+#define IS_MINE 3
+#define IS_NUMBER 4
+// #endregion
+
+// #region Neighbours
+#define NEIGHBOUR_TOP_LEFT 0
+#define NEIGHBOUR_TOP 1
+#define NEIGHBOUR_TOP_RIGHT 2
+#define NEIGHBOUR_RIGHT 3
+#define NEIGHBOUR_BOTTOM_RIGHT 4
+#define NEIGHBOUR_BOTTOM 5
+#define NEIGHBOUR_BOTTOM_LEFT 6
+#define NEIGHBOUR_LEFT 7
+#define NUM_NEIGHBOURS 8
+// #endregion
+
+// #region State
+// Poor man's enum
+#define IS_IN_PRESENTATION 0
+#define IS_IN_SETUP 0
+#define IS_IN_GAME 2
+#define IS_IN_END_SCREEN 3
+// #endregion
+// #endregion
+// #endregion
+
 
 // #region Poor man's functions
 // #region GetNeighbours
@@ -80,7 +118,7 @@ using namespace std;
 // #region Render board
 #define RENDER_BOARD                                                                                                                                                               \
                                                                                                                                                                                    \
-  system("cls");                                                                                                                                                                   \
+  system("");                                                                                                                                                                      \
                                                                                                                                                                                    \
   for (size_t row = 0; row < (boardSize + 1); row++) {                                                                                                                             \
     for (size_t col = 0; col < (boardSize + 1); col++) {                                                                                                                           \
@@ -149,57 +187,83 @@ using namespace std;
   persistentMessage = "";
 // #endregion
 
-// #region Reveal
+// #region Get new cell (User input)
+#define GET_NEW_CELL(currentCell, currentAction)                                                                                                                                   \
+  string input;                                                                                                                                                                    \
+  ASK(input);                                                                                                                                                                      \
+                                                                                                                                                                                   \
+  char action = '0';                                                                                                                                                               \
+                                                                                                                                                                                   \
+  int cell = -1;                                                                                                                                                                   \
+                                                                                                                                                                                   \
+  try {                                                                                                                                                                            \
+    /* AI for regex matching syntax in c++. Modified ofc */                                                                                                                        \
+    smatch match;                                                                                                                                                                  \
+    if (regex_match(input, match, inputRegX)) {                                                                                                                                    \
+      char colChar = toupper(match[1].str()[0]);                                                                                                                                   \
+      int rowNum = stoi(match[2].str());                                                                                                                                           \
+      if (match[3].matched) action = tolower(match[3].str()[0]);                                                                                                                   \
+      else action = 's';                                                                                                                                                           \
+                                                                                                                                                                                   \
+      int col = colChar - 'A';                                                                                                                                                     \
+      int row = rowNum - 1;                                                                                                                                                        \
+                                                                                                                                                                                   \
+      cell = row * boardSize + col;                                                                                                                                                \
+    }                                                                                                                                                                              \
+    /* End of syntax copy*/                                                                                                                                                        \
+  } catch (...) {                                                                                                                                                                  \
+    persistentMessage += string() +                                                                                                                                                \
+                         "\nInvalid input. Format is:\n"                                                                                                                           \
+                         "- " +                                                                                                                                                    \
+                         MAIN_COLOR + "[Column][Row] [Action]" + RESET_FORMAT +                                                                                                    \
+                         " To pick the cell and "                                                                                                                                  \
+                         "action.\n"                                                                                                                                               \
+                         "OR"                                                                                                                                                      \
+                         "- " +                                                                                                                                                    \
+                         MAIN_COLOR + "[Column][Row]" + RESET_FORMAT +                                                                                                             \
+                         " To pick the cell and "                                                                                                                                  \
+                         "show the cell\n";                                                                                                                                        \
+  }                                                                                                                                                                                \
+  currentAction = action;                                                                                                                                                          \
+  currentCell = cell;
 
 // #endregion
-// #endregion
 
-// #region Render sprites
-#define DEFAULT_SPRITE "⬛ "
-#define EMPTY_SPRITE "⬜ "
-#define MARKED_SPRITE "🚩 "
-#define MINE_SPRITE "💣 "
-#define MINE_EXPLODED_SPRITE "💥 "
-// #endregion
+// #region Reveal cell
+// #define REVEAL_CELL(cellIndex, neighbours, boardSize)                                                                                                                              \
+//   if (board[cellIndex] != IS_DEFAULT) return;                                                                                                                                      \
+//                                                                                                                                                                                    \
+//   board[cellIndex] = truthBoard[cellIndex];                                                                                                                                        \
+//   if (truthBoard[cellIndex] != IS_EMPTY) return;                                                                                                                                   \
+//                                                                                                                                                                                    \
+//   int checkedCells[MAX_BOARD_SIZE * MAX_BOARD_SIZE];                                                                                                                               \
+//   int currentNeighbours[NUM_NEIGHBOURS];                                                                                                                                           \
+//   int connectedNeighbours[NUM_NEIGHBOURS];                                                                                                                                         \
+//   GET_NEIGHBOURS(cellIndex, currentNeighbours);
+// \                                                                                                                                                                                \
+//  \                                                                                                                                                                                  \
+// \
+// while (currentNeighbours)
+//   for (size_t possibleNeighbour = 0; possibleNeighbour < boardSize * boardSize; possibleNeighbour++) {
+//     REVEAL_CELL(nestedNeighbours, nestedNeighbours[neighbourIndex]);
+//   }                                                                                                                                                                              \
+//                                                                                                                                                                                    \
+//
 
-// #region Truth tables
-// #region Cell types
-#define IS_DEFAULT 0
-#define IS_MARKED 1
-#define IS_EMPTY 2
-#define IS_MINE 3
-#define IS_NUMBER 4
-// #endregion
 
-// #region Neighbours
-#define NEIGHBOUR_TOP_LEFT 0
-#define NEIGHBOUR_TOP 1
-#define NEIGHBOUR_TOP_RIGHT 2
-#define NEIGHBOUR_RIGHT 3
-#define NEIGHBOUR_BOTTOM_RIGHT 4
-#define NEIGHBOUR_BOTTOM 5
-#define NEIGHBOUR_BOTTOM_LEFT 6
-#define NEIGHBOUR_LEFT 7
-#define NUM_NEIGHBOURS 8
-// #endregion
 
-// #region State
-// Poor man's enum
-#define IS_IN_PRESENTATION 0
-#define IS_IN_SETUP 0
-#define IS_IN_GAME 2
-#define IS_IN_END_SCREEN 3
-// #endregion
 // #endregion
 // #endregion
 
 int main() {
   // #region Setup
   srand(time(0));
+
   // AI reference for setting the console to utf-8 encoding
   SetConsoleOutputCP(CP_UTF8);
   SetConsoleCP(CP_UTF8);
   // End of AI reference
+
   // #endregion
 
   // #region Global variables
@@ -224,30 +288,29 @@ int main() {
      * more mantainable and more readable
      */
     // #region How to play
-
     while (state == IS_IN_PRESENTATION) {
       // #region Render
       CLEAR_TERMINAL;
 
-      // TITLE
+      TITLE;
 
-      // WRITE MAIN_COLOR + "HOW TO PLAY:" + RESET_FORMAT ENDL;
-      // WRITE "  Type " + MAIN_COLOR + "[Column][Row][Action]" + RESET_FORMAT + " To pick a cell and perform the desired action.";
-      // WRITE ITALIC + " (Spacing does not matter)" + RESET_FORMAT ENDL;
-      // SPACE;
-      // WRITE "  Available actions:" ENDL;
-      // WRITE "  - " + MAIN_COLOR + "s" + RESET_FORMAT + " to show the cell. " + ITALIC + "(Default, if no action is typed it will execute this)" + RESET_FORMAT ENDL;
-      // WRITE "  - " + MAIN_COLOR + "m" + RESET_FORMAT + " to mark the cell as a potential mine." ENDL;
-      // SPACE;
-      // WRITE "  Examples:" ENDL;
-      // WRITE "  - " + MAIN_COLOR + "A1" + RESET_FORMAT + " To show cell at column A and row 1." ENDL;
-      // WRITE "  - " + MAIN_COLOR + "E7 m" + RESET_FORMAT + " To mark the cell at column E and row 7 as a potential mine." ENDL;
+      WRITELN(MAIN_COLOR + "HOW TO PLAY:" + RESET_FORMAT);
+      WRITELN("  Type " + MAIN_COLOR + "[Column][Row][Action]" + RESET_FORMAT + " To pick a cell and perform the desired action.");
+      WRITELN(ITALIC + " (Spacing does not matter)" + RESET_FORMAT);
+      SPACE;
+      WRITELN("  Available actions:");
+      WRITELN("  - " + MAIN_COLOR + "s" + RESET_FORMAT + " to show the cell. " + ITALIC + "(Default, if no action is typed it will execute this)" + RESET_FORMAT);
+      WRITELN("  - " + MAIN_COLOR + "m" + RESET_FORMAT + " to mark the cell as a potential mine.");
+      SPACE;
+      WRITELN("  Examples:");
+      WRITELN("  - " + MAIN_COLOR + "A1" + RESET_FORMAT + " To show cell at column A and row 1.");
+      WRITELN("  - " + MAIN_COLOR + "E7 m" + RESET_FORMAT + " To mark the cell at column E and row 7 as a potential mine.");
       SPACE;
       SPACE;
       SEPARATOR;
       if (didIncorrectInput) {
         SPACE;
-        // WRITE persistentMessage ENDL;
+        WRITELN(persistentMessage);
 
         persistentMessage = "";
       }
@@ -260,6 +323,7 @@ int main() {
       char resultChar;
       try {
         string input = "y";
+        // Debug helper for automatic input
         if (!SKIP_QUESTIONS) ASK(input);
         resultChar = tolower(input[0]);
       } catch (...) {
@@ -289,6 +353,17 @@ int main() {
 
     // #region Main loop
     while (state == IS_IN_SETUP || state == IS_IN_GAME) {
+      // #region Data
+      int explodedMine = 0;
+      int currentCell = 0;
+      char currentAction = '0';
+
+      // The following data is only for the setup state
+      bool isSizePicked = false;
+      bool isNOfMinesPicked = false;
+      int maxMines = 1;
+      // #endregion
+
       // #region Board setup
       // #region Board cleanup
       for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
@@ -297,106 +372,43 @@ int main() {
       }
       // #endregion
 
-      bool isSizePicked = false;
-      bool isNOfMinesPicked = false;
-      int maxMines = 1;
-      int explodedMine = 0;
-      char currentAction = '0';
-
       // #region Utils
       /**
      * I had some stuff here made with Lambda expression, which technically means they were still inside main.
-     * However I chose to try to make it functionless regradless, by complicating myself and making functionless functions with #defines
+     * However I chose to keep the code without true functions because it did feel like cheating
+     * Like: function<void(int neighbours[], int cellIndex)> showNeighbours = [&board, &truthBoard, &showNeighbours](int neighbours[], int cellIndex) { ... }
      */
 
-      int cellToCheck;
-      int neighbours[NUM_NEIGHBOURS];
-
-
-
-      //Helper function to get the user to pick a cell
-      // function<char()> getInput = [&inputRegX, &persistentMessage, &boardSize, &currentCell]() {
-      //   // #region getInput
-      //   string input;
-      //   ASK(input);
-
-      //   char action = '0';
-
-      //   try {
-      //     // // AI for regex matching syntax in c++. Modified ofc
-      //     smatch match;
-      //     if (regex_match(input, match, inputRegX)) {
-      //       char colChar = toupper(match[1].str()[0]);
-      //       int rowNum = stoi(match[2].str());
-      //       if (match[3].matched) action = tolower(match[3].str()[0]);
-      //       else action = 's';
-
-      //       int col = colChar - 'A';
-      //       int row = rowNum - 1;
-
-      //       currentCell = row * boardSize + col;
-      //     }
-      //     // End of syntax copy
-      //   } catch (...) {
-      //     persistentMessage += string() +
-      //                          "\nInvalid input. Format is:\n"
-      //                          "- " +
-      //                          MAIN_COLOR + "[Column][Row] [Action]" + RESET_FORMAT +
-      //                          " To pick the cell and "
-      //                          "action.\n"
-      //                          "OR"
-      //                          "- " +
-      //                          MAIN_COLOR + "[Column][Row]" + RESET_FORMAT +
-      //                          " To pick the cell and "
-      //                          "show the cell\n";
-      //   }
-      //   return action;
-      //   // #endregion
-      // };
-
-      // Helper function to recursivelly show cells
-      // function<void(int neighbours[], int cellIndex)> showNeighbours = [&board, &truthBoard, &showNeighbours](int neighbours[], int cellIndex) {
-      //   if (board[cellIndex] != IS_DEFAULT) return;
-
-      //   board[cellIndex] = truthBoard[cellIndex];
-      //   if (truthBoard[cellIndex] != IS_EMPTY) return;
-
-      //   int nestedNeighbours[NUM_NEIGHBOURS];
-      //   getNeighbours(cellIndex, nestedNeighbours);
-      //   for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
-      //     showNeighbours(nestedNeighbours, nestedNeighbours[neighbourIndex]);
-      //   }
-      // };
       // #endregion
 
       while (state == IS_IN_SETUP) {
         // #region Render
-        // CLEAR_TERMINAL;
+        CLEAR_TERMINAL;
 
-        // TITLE
+        TITLE
 
-        // WRITE MAIN_COLOR + "BOARD SETUP:" + RESET_FORMAT ENDL;
-        // if (!isSizePicked) WRITE "  Input a board size " + ITALIC + "(" + to_string(MIN_BOARD_SIZE) + "-" + to_string(MAX_BOARD_SIZE) + ")" + RESET_FORMAT ENDL;
-        // else WRITE "  Board size -> " + MAIN_COLOR + to_string(boardSize) + "x" + to_string(boardSize) + RESET_FORMAT ENDL;
+        WRITELN(MAIN_COLOR + "BOARD SETUP:" + RESET_FORMAT);
+        if (!isSizePicked) WRITELN("  Input a board size " + ITALIC + "(" + to_string(MIN_BOARD_SIZE) + "-" + to_string(MAX_BOARD_SIZE) + ")" + RESET_FORMAT);
+        else WRITELN("  Board size -> " + MAIN_COLOR + to_string(boardSize) + "x" + to_string(boardSize) + RESET_FORMAT);
 
-        // if (isSizePicked) {
-        //   if (!isNOfMinesPicked) {
-        //     WRITE "  Input the number of mines " + ITALIC + "(" + to_string(MIN_MINES) + "-" + to_string(maxMines) + ")" + RESET_FORMAT ENDL;
-        //     WRITE ITALIC + "  Recommended mines: " + to_string(int(maxMines * RECOMENDED_MINE_DENSITY)) + RESET_FORMAT ENDL;
-        //   } else {
-        //     WRITE "  Number of MINES -> " + MAIN_COLOR + to_string(nOfMines) + RESET_FORMAT ENDL;
-        //   }
-        // }
-        // SPACE;
-        // SPACE;
-        // SEPARATOR;
-        // if (didIncorrectInput) {
-        //   SPACE;
-        //   WRITE persistentMessage ENDL;
+        if (isSizePicked) {
+          if (!isNOfMinesPicked) {
+            WRITELN("  Input the number of mines " + ITALIC + "(" + to_string(MIN_MINES) + "-" + to_string(maxMines) + ")" + RESET_FORMAT);
+            WRITELN(ITALIC + "  Recommended mines: " + to_string(int(maxMines * RECOMENDED_MINE_DENSITY)) + RESET_FORMAT);
+          } else {
+            WRITELN("  Number of MINES -> " + MAIN_COLOR + to_string(nOfMines) + RESET_FORMAT);
+          }
+        }
+        SPACE;
+        SPACE;
+        SEPARATOR;
+        if (didIncorrectInput) {
+          SPACE;
+          WRITELN(persistentMessage);
 
-        //   persistentMessage = "";
-        // }
-        // SPACE;
+          persistentMessage = "";
+        }
+        SPACE;
         // #endregion
 
         // #region Asking
@@ -405,7 +417,7 @@ int main() {
 
 
         if (!isSizePicked) {
-
+          // Debug helper for automatic input
           if (!SKIP_QUESTIONS) ASK(input);
           else input = "10";
 
@@ -423,7 +435,7 @@ int main() {
             continue;
           }
           /**
-         * Max mines is calculated by taking the amounf of cells in the picked board and removing:
+         * Max mines is calculated by taking the amount of cells in the picked board and removing:
          * - (8) The number of possible neighbours of the initial cell, since we want the initial cell to be clear
          * - (1) The actual initial shown cell
          * - (1) To have space for a free space somewhere else on the map, since if not, the game would instantly end uppon opening the first cell
@@ -437,6 +449,7 @@ int main() {
 
         if (!isNOfMinesPicked) {
 
+          // Debug helper for automatic input
           if (!SKIP_QUESTIONS) ASK(input);
           else input = "18";
 
@@ -457,7 +470,7 @@ int main() {
           continue;
         }
 
-
+        // Debug helper for automatic input
         if (!SKIP_QUESTIONS) ASK(input);
         else input = "y";
 
@@ -486,8 +499,8 @@ int main() {
         persistentMessage += "Unknown response, please type \"y\" or \"n\"";
         // #endregion
       }
-      state = IS_IN_GAME;
 
+      state = IS_IN_GAME;
       maxChar = string() + letters[boardSize - 1];
       inputRegX =
           regex((boardSize >= 10 ? "^\\s*([A-" + maxChar + "])\\s*(10|[1-9])\\s*([ms])?\\s*$" : "^\\s*([A-" + maxChar + "])\\s*([1-" + to_string(boardSize) + "])\\s*([ms])?\\s*$"),
@@ -495,14 +508,16 @@ int main() {
 
 
       do {
-
-
-        // currentAction = getInput();
+        RENDER_BOARD;
+        SPACE;
+        WRITELN("Please open an initial cell " + ITALIC + "(e.g. " + MAIN_COLOR + "A1" + RESET_FORMAT + ITALIC + ")" + RESET_FORMAT);
+        GET_NEW_CELL(currentCell, currentAction);
 
         if (currentAction != 's') {
-          persistentMessage += "\n Please open an initial cell";
+          persistentMessage += "\n Invalid cell / action";
         }
       } while (currentAction != 's');
+
       // #region Board generation
       for (size_t i = 0; i < nOfMines; i++) {
         int mineIndex;
@@ -528,7 +543,7 @@ int main() {
 
 
           int mineNeighbours[NUM_NEIGHBOURS];
-          // getNeighbours(mineIndex, mineNeighbours);
+          GET_NEIGHBOURS(mineIndex, mineNeighbours);
 
           for (size_t neighbour = 0; neighbour < NUM_NEIGHBOURS; neighbour++) {
             int neighbourIndex = mineNeighbours[neighbour];
@@ -543,14 +558,14 @@ int main() {
       for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
         if (truthBoard[cellIndex] == IS_MINE) continue;
 
-        int neighbours[NUM_NEIGHBOURS];
-        // getNeighbours(cellIndex, neighbours);
+        int cellNeighbours[NUM_NEIGHBOURS];
+        GET_NEIGHBOURS(cellIndex, cellNeighbours);
 
         int neighbouringBombs = 0;
 
         for (size_t neighbourIndex = 0; neighbourIndex < NUM_NEIGHBOURS; neighbourIndex++) {
-          if (neighbours[neighbourIndex] == -1) continue; // Ingore neighbours outside bounds
-          if (truthBoard[neighbours[neighbourIndex]] == IS_MINE) neighbouringBombs++;
+          if (cellNeighbours[neighbourIndex] == -1) continue; // Ingore neighbours outside bounds
+          if (truthBoard[cellNeighbours[neighbourIndex]] == IS_MINE) neighbouringBombs++;
         }
         if (neighbouringBombs == 0) truthBoard[cellIndex] = IS_EMPTY;
         else truthBoard[cellIndex] = IS_NUMBER + neighbouringBombs; // Attach number directly to the cell type
@@ -558,7 +573,49 @@ int main() {
       // #endregion
 
       int neighbours[NUM_NEIGHBOURS];
-      // getNeighbours(currentCell, neighbours);
+      GET_NEIGHBOURS(currentCell, neighbours);
+      // REVEAL_CELL(currentCell, neighbours);
+      {
+        static bool visited[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
+        static int queue_cells[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
+        static int connected[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
+
+        for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
+          visited[cellIndex] = false;
+          connected[cellIndex] == -1;
+          queue_cells[cellIndex] = -1;
+        }
+
+
+        connected[0] = currentCell;
+        int initialIndex = 0;
+        int newIndex = NUM_NEIGHBOURS;
+
+        while (newIndex != initialIndex) {
+          initialIndex = newIndex;
+          for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
+            if (connected[cellIndex] == -1) continue;
+
+            GET_NEIGHBOURS(connected[cellIndex], queue_cells);
+
+            for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
+              if (queue_cells[cellIndex] == -1) continue;
+              if (visited[queue_cells[cellIndex]]) continue;
+              if (truthBoard[queue_cells[cellIndex]] != IS_DEFAULT) break;
+
+              connected[queue_cells[cellIndex]] = queue_cells[cellIndex];
+              visited[queue_cells[cellIndex]] = true;
+              WRITELN("Revealed cell " + to_string(queue_cells[cellIndex]));
+            }
+          }
+        }
+
+        for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
+          if (connected[cellIndex] == -1) continue;
+          board[connected[cellIndex]] = truthBoard[connected[cellIndex]];
+        }
+      }
+
       // showNeighbours(neighbours, currentCell);
 
       // #endregion
@@ -568,7 +625,7 @@ int main() {
       while (state == IS_IN_GAME) {
         currentAction = '0';
         RENDER_BOARD;
-        // currentAction = getInput();
+        GET_NEW_CELL(currentCell, currentAction);
 
 
         if (currentAction == 'm') {
@@ -585,7 +642,7 @@ int main() {
 
         if (board[currentCell] == IS_DEFAULT || board[currentCell] == IS_MARKED) {
           int neighbours[NUM_NEIGHBOURS];
-          // getNeighbours(currentCell, neighbours);
+          GET_NEIGHBOURS(currentCell, neighbours);
           // showNeighbours(neighbours, currentCell);
         }
 
