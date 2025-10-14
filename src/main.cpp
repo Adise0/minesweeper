@@ -18,7 +18,7 @@ using namespace std;
 #define MIN_BOARD_SIZE 4
 #define MIN_MINES 1
 #define RECOMENDED_MINE_DENSITY 0.2
-#define SKIP_QUESTIONS true
+#define SKIP_QUESTIONS false
 #define IS_DEBUGGING_BOARD false
 // #endregion
 
@@ -118,7 +118,7 @@ using namespace std;
 // #region Render board
 #define RENDER_BOARD                                                                                                                                                               \
                                                                                                                                                                                    \
-  system("");                                                                                                                                                                      \
+  system("cls");                                                                                                                                                                   \
                                                                                                                                                                                    \
   for (size_t row = 0; row < (boardSize + 1); row++) {                                                                                                                             \
     for (size_t col = 0; col < (boardSize + 1); col++) {                                                                                                                           \
@@ -230,25 +230,59 @@ using namespace std;
 // #endregion
 
 // #region Reveal cell
-// #define REVEAL_CELL(cellIndex, neighbours, boardSize)                                                                                                                              \
-//   if (board[cellIndex] != IS_DEFAULT) return;                                                                                                                                      \
-//                                                                                                                                                                                    \
-//   board[cellIndex] = truthBoard[cellIndex];                                                                                                                                        \
-//   if (truthBoard[cellIndex] != IS_EMPTY) return;                                                                                                                                   \
-//                                                                                                                                                                                    \
-//   int checkedCells[MAX_BOARD_SIZE * MAX_BOARD_SIZE];                                                                                                                               \
-//   int currentNeighbours[NUM_NEIGHBOURS];                                                                                                                                           \
-//   int connectedNeighbours[NUM_NEIGHBOURS];                                                                                                                                         \
-//   GET_NEIGHBOURS(cellIndex, currentNeighbours);
-// \                                                                                                                                                                                \
-//  \                                                                                                                                                                                  \
-// \
-// while (currentNeighbours)
-//   for (size_t possibleNeighbour = 0; possibleNeighbour < boardSize * boardSize; possibleNeighbour++) {
-//     REVEAL_CELL(nestedNeighbours, nestedNeighbours[neighbourIndex]);
-//   }                                                                                                                                                                              \
-//                                                                                                                                                                                    \
-//
+#define REVEAL_CELL(cellIndex, neighbours, boardSize)                                                                                                                              \
+  bool visited[MAX_BOARD_SIZE * MAX_BOARD_SIZE];                                                                                                                                   \
+  int queue[MAX_BOARD_SIZE * MAX_BOARD_SIZE];                                                                                                                                      \
+                                                                                                                                                                                   \
+                                                                                                                                                                                   \
+  for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {                                                                                           \
+    visited[cellIndex] = false;                                                                                                                                                    \
+    queue[cellIndex] = -1;                                                                                                                                                         \
+  }                                                                                                                                                                                \
+                                                                                                                                                                                   \
+                                                                                                                                                                                   \
+  queue[0] = currentCell;                                                                                                                                                          \
+                                                                                                                                                                                   \
+  while (true) {                                                                                                                                                                   \
+    bool isQueueEmpty = true;                                                                                                                                                      \
+                                                                                                                                                                                   \
+    for (size_t i = 0; i < MAX_BOARD_SIZE * MAX_BOARD_SIZE; i++) {                                                                                                                 \
+      if (queue[i] == -1) continue;                                                                                                                                                \
+                                                                                                                                                                                   \
+      int cellIndex = queue[i];                                                                                                                                                    \
+                                                                                                                                                                                   \
+      queue[i] = -1;                                                                                                                                                               \
+      isQueueEmpty = false;                                                                                                                                                        \
+                                                                                                                                                                                   \
+      if (visited[cellIndex]) continue;                                                                                                                                            \
+      visited[cellIndex] = true;                                                                                                                                                   \
+                                                                                                                                                                                   \
+      if (board[cellIndex] != IS_DEFAULT) continue;                                                                                                                                \
+                                                                                                                                                                                   \
+      board[cellIndex] = truthBoard[cellIndex];                                                                                                                                    \
+      if (truthBoard[cellIndex] != IS_EMPTY) continue;                                                                                                                             \
+                                                                                                                                                                                   \
+      int neighbours[NUM_NEIGHBOURS];                                                                                                                                              \
+      GET_NEIGHBOURS(cellIndex, neighbours);                                                                                                                                       \
+                                                                                                                                                                                   \
+                                                                                                                                                                                   \
+      for (size_t j = 0; j < NUM_NEIGHBOURS; j++) {                                                                                                                                \
+        int neighbourCell = neighbours[j];                                                                                                                                         \
+        if (neighbourCell == -1) continue;                                                                                                                                         \
+        if (visited[neighbourCell]) continue;                                                                                                                                      \
+                                                                                                                                                                                   \
+        int queueInset = 0;                                                                                                                                                        \
+        while (queueInset < MAX_BOARD_SIZE * MAX_BOARD_SIZE && queue[queueInset] != -1)                                                                                            \
+          queueInset++;                                                                                                                                                            \
+                                                                                                                                                                                   \
+        if (queueInset < MAX_BOARD_SIZE * MAX_BOARD_SIZE) {                                                                                                                        \
+          queue[queueInset] = neighbourCell;                                                                                                                                       \
+        }                                                                                                                                                                          \
+      }                                                                                                                                                                            \
+    }                                                                                                                                                                              \
+                                                                                                                                                                                   \
+    if (isQueueEmpty) break;                                                                                                                                                       \
+  }
 
 
 
@@ -574,73 +608,7 @@ int main() {
 
       int neighbours[NUM_NEIGHBOURS];
       GET_NEIGHBOURS(currentCell, neighbours);
-
-      {
-        /**
-          * Flood fill algorithm to reveal all connected empty cells with BFS. I'd much rather use recursion with DFS but no functions = no recursion;
-          * Sources -> https://www.geeksforgeeks.org/dsa/flood-fill-algorithm/
-          * Also I did use the help of ChatGPT to get the idea to use BFS. All code was manually written, but guided by the AI.
-          * Also BFS with no dynamic memory vectors is a pain in the ass.
-         */
-        bool visited[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
-        int queue[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
-
-
-        for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
-          visited[cellIndex] = false;
-          queue[cellIndex] = -1;
-        }
-
-
-        queue[0] = currentCell;
-
-        while (true) {
-          bool isQueueEmpty = true;
-
-          for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
-            if (queue[cellIndex] == -1) continue;
-
-            int cell = queue[cellIndex];
-
-            queue[cellIndex] = -1;
-            isQueueEmpty = false;
-
-            if (visited[cell]) continue;
-            visited[cell] = true;
-
-            if (board[cell] != IS_DEFAULT) continue;
-            WRITELN("Cell " + to_string(cell) + " is " + to_string(board[cell]));
-
-            board[cell] = truthBoard[cell];
-            WRITELN("Cell " + to_string(cell) + " is " + to_string(board[cell]));
-
-
-            int neighbours[NUM_NEIGHBOURS];
-            GET_NEIGHBOURS(cell, neighbours);
-
-
-
-            for (size_t i = 0; i < NUM_NEIGHBOURS; i++) {
-              int neighbourCell = neighbours[i];
-              if (neighbourCell == -1) continue;
-              if (visited[neighbourCell]) continue;
-
-
-
-              int queueInset = 0;
-              while (queueInset < MAX_BOARD_SIZE * MAX_BOARD_SIZE && queue[queueInset] != -1)
-                queueInset++;
-
-              if (queueInset < MAX_BOARD_SIZE * MAX_BOARD_SIZE) queue[queueInset] = neighbourCell;
-            }
-          }
-
-          if (isQueueEmpty) break;
-        }
-      }
-
-      // showNeighbours(neighbours, currentCell);
-
+      REVEAL_CELL(currentCell, neighbours, boardSize);
       // #endregion
 
       // #region In game
@@ -652,7 +620,18 @@ int main() {
 
 
         if (currentAction == 'm') {
-          board[currentCell] = IS_MARKED;
+          switch (board[currentCell]) {
+          case IS_MARKED:
+            board[currentCell] = IS_DEFAULT;
+            break;
+
+          case IS_DEFAULT:
+            board[currentCell] = IS_MARKED;
+            break;
+
+          default:
+            break;
+          }
         }
         if (currentAction != 's') continue;
 
@@ -666,7 +645,7 @@ int main() {
         if (board[currentCell] == IS_DEFAULT || board[currentCell] == IS_MARKED) {
           int neighbours[NUM_NEIGHBOURS];
           GET_NEIGHBOURS(currentCell, neighbours);
-          // showNeighbours(neighbours, currentCell);
+          REVEAL_CELL(currentCell, neighbours, boardSize);
         }
 
         for (size_t cellIndex = 0; cellIndex < boardSize * boardSize; cellIndex++) {
