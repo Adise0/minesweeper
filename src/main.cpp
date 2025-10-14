@@ -574,45 +574,68 @@ int main() {
 
       int neighbours[NUM_NEIGHBOURS];
       GET_NEIGHBOURS(currentCell, neighbours);
-      // REVEAL_CELL(currentCell, neighbours);
+
       {
-        static bool visited[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
-        static int queue_cells[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
-        static int connected[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
+        /**
+          * Flood fill algorithm to reveal all connected empty cells with BFS. I'd much rather use recursion with DFS but no functions = no recursion;
+          * Sources -> https://www.geeksforgeeks.org/dsa/flood-fill-algorithm/
+          * Also I did use the help of ChatGPT to get the idea to use BFS. All code was manually written, but guided by the AI.
+          * Also BFS with no dynamic memory vectors is a pain in the ass.
+         */
+        bool visited[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
+        int queue[MAX_BOARD_SIZE * MAX_BOARD_SIZE];
+
 
         for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
           visited[cellIndex] = false;
-          connected[cellIndex] == -1;
-          queue_cells[cellIndex] = -1;
+          queue[cellIndex] = -1;
         }
 
 
-        connected[0] = currentCell;
-        int initialIndex = 0;
-        int newIndex = NUM_NEIGHBOURS;
+        queue[0] = currentCell;
 
-        while (newIndex != initialIndex) {
-          initialIndex = newIndex;
+        while (true) {
+          bool isQueueEmpty = true;
+
           for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
-            if (connected[cellIndex] == -1) continue;
+            if (queue[cellIndex] == -1) continue;
 
-            GET_NEIGHBOURS(connected[cellIndex], queue_cells);
+            int cell = queue[cellIndex];
 
-            for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
-              if (queue_cells[cellIndex] == -1) continue;
-              if (visited[queue_cells[cellIndex]]) continue;
-              if (truthBoard[queue_cells[cellIndex]] != IS_DEFAULT) break;
+            queue[cellIndex] = -1;
+            isQueueEmpty = false;
 
-              connected[queue_cells[cellIndex]] = queue_cells[cellIndex];
-              visited[queue_cells[cellIndex]] = true;
-              WRITELN("Revealed cell " + to_string(queue_cells[cellIndex]));
+            if (visited[cell]) continue;
+            visited[cell] = true;
+
+            if (board[cell] != IS_DEFAULT) continue;
+            WRITELN("Cell " + to_string(cell) + " is " + to_string(board[cell]));
+
+            board[cell] = truthBoard[cell];
+            WRITELN("Cell " + to_string(cell) + " is " + to_string(board[cell]));
+
+
+            int neighbours[NUM_NEIGHBOURS];
+            GET_NEIGHBOURS(cell, neighbours);
+
+
+
+            for (size_t i = 0; i < NUM_NEIGHBOURS; i++) {
+              int neighbourCell = neighbours[i];
+              if (neighbourCell == -1) continue;
+              if (visited[neighbourCell]) continue;
+
+
+
+              int queueInset = 0;
+              while (queueInset < MAX_BOARD_SIZE * MAX_BOARD_SIZE && queue[queueInset] != -1)
+                queueInset++;
+
+              if (queueInset < MAX_BOARD_SIZE * MAX_BOARD_SIZE) queue[queueInset] = neighbourCell;
             }
           }
-        }
 
-        for (size_t cellIndex = 0; cellIndex < MAX_BOARD_SIZE * MAX_BOARD_SIZE; cellIndex++) {
-          if (connected[cellIndex] == -1) continue;
-          board[connected[cellIndex]] = truthBoard[connected[cellIndex]];
+          if (isQueueEmpty) break;
         }
       }
 
